@@ -1,30 +1,12 @@
-/*
-    A simple CLI that takes as input a dxf file path and produces an svg according to laiouts standards
-    This CLI uses clap::Parser, so it is nicely self documented, try --help.
-    Whenever possible, this program tries to produce closed paths, however that is not always possible.
-*/
-
-// TODO: do something better than hardcoding this.
 const NUM_SEGMENTS: usize = 16;
 
 use clap::Parser;
 
-use dxf::entities as dxfe;
+use dxf::entities::{self as dxfe, Line};
 use std::{collections::HashMap, f64::consts::PI};
 use svg::node::element as svg_element;
-
+use dxfe::EntityType as ET;
 use log::{error, info, warn};
-
-#[derive(Parser, Debug)]
-struct Args {
-    /// Path to input file is required
-    #[clap(short = 'i', long = "input")]
-    input: String,
-    /// Path to output file, may be omitted.
-    #[clap(short = 'o', long = "output")]
-    output: Option<String>,
-}
-
 #[derive(Clone, Default)]
 pub struct PolyLine {
     is_closed: bool,
@@ -72,47 +54,11 @@ impl From<dxfe::Ellipse> for PolyLine {
         make_polyline_ellipse(NUM_SEGMENTS, &e)
     }
 }
-
-fn main() {
-    // load logger from environment
-    env_logger::init_from_env(
-        env_logger::Env::new()
-            .filter("LOG")
-            .write_style("LOG_STYLE"),
-    );
-
-    let args = Args::parse();
-
-    let input_path = args
-        .input
-        .trim_start_matches('.')
-        .trim_start_matches('\\')
-        .to_string();
-
-    let output_path = args
-        .output
-        .unwrap_or(input_path.clone().replace('.', "_").replace(' ', "_") + "_export.svg");
-
-    let dxf_file = dxf::Drawing::load_file(input_path).expect("expexted valid input file");
-
-    println!("amout of ucs: {}", dxf_file.ucss().count());
-
-    // TODO: complete detecting units etc.
-    let default_units = dxf_file.header.default_drawing_units;
-    let units_scale_factor = dxf_file.header.dimensioning_scale_factor;
-
-    let layers = extract_layers(&dxf_file);
-
-    write_layers_to_svg(&layers, output_path);
-}
-
-// create this struct since unable to find Layer struct in dxf lib that also contains entities
 #[derive(Clone, Debug, Default)]
 struct Layer {
     name: String,
     data: LayerData,
 }
-
 #[derive(Clone, Debug, Default)]
 struct LayerData {
     lines: Vec<dxfe::Line>,
@@ -121,7 +67,6 @@ struct LayerData {
     circles: Vec<dxfe::Circle>,
     ellipses: Vec<dxfe::Ellipse>,
 }
-
 impl Layer {
     fn new(name: String) -> Self {
         Self {
@@ -146,7 +91,23 @@ impl Layer {
         polylines
     }
 }
+fn main() {
+    // load logger from environment
+    env_logger::init_from_env(
+        env_logger::Env::new()
+            .filter("LOG")
+            .write_style("LOG_STYLE")
+            ,
+    );
+    
+    let input_path = "test.dxf".to_string();
 
+    let output_path = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+
+    let dxf_file = dxf::Drawing::load_file(input_path).expect("expexted valid input file");
+    let layers = extract_layers(&dxf_file);
+    write_layers_to_svg(&layers, output_path);
+}
 fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     let mut layers = HashMap::<String, Layer>::default();
 
@@ -169,8 +130,6 @@ fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
             let ld = &mut layer.data;
 
             let dxf_type = &entity.specific;
-
-            use dxfe::EntityType as ET;
 
             match dxf_type {
                 // handled entities
@@ -205,7 +164,6 @@ fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
 
     layers
 }
-
 //makes an svg from a table of objects
 fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
     //
@@ -257,7 +215,6 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
 
         for polyline in polylines.iter() {
             let mut path_data = svg_element::path::Data::new();
-
             let x_values = polyline.x_values.iter();
             let y_values = polyline.y_values.iter();
             let mut xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - max_y));
@@ -282,7 +239,7 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
             let path = svg_element::Path::new()
                 .set("fill", "none")
                 .set("stroke", stroke)
-                .set("stroke-width", "10px")
+                .set("stroke-width", "0.14px")
                 .set("d", path_data);
 
             group = group.add(path);
@@ -299,7 +256,6 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
         Err(err) => panic!("Error: {}", err),
     };
 }
-
 fn make_polyline_circle(num_segments: usize, c: &dxfe::Circle) -> PolyLine {
     _make_polyline_ellipse(
         num_segments,
