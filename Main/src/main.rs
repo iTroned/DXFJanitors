@@ -2,7 +2,7 @@ const NUM_SEGMENTS: usize = 16;
 
 use clap::Parser;
 
-use dxf::entities::{self as dxfe, Line};
+use dxf::entities::{self as dxfe, Line, LwPolyline};
 use std::{collections::HashMap, f64::consts::PI};
 use svg::node::element as svg_element;
 use dxfe::EntityType as ET;
@@ -102,11 +102,15 @@ fn main() {
     
     let input_path = "test.dxf".to_string();
 
-    let output_path = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+    let output_path = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.dxf";
+    let output_path_svg = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
 
-    let dxf_file = dxf::Drawing::load_file(input_path).expect("expexted valid input file");
-    let layers = extract_layers(&dxf_file);
-    write_layers_to_svg(&layers, output_path);
+    let in_file = dxf::Drawing::load_file(input_path).expect("expexted valid input file");
+    let mut dxf_file = dxf::Drawing::new();
+    dxf::Drawing::save_file(&in_file, "test_export.dxf").map_err(|err| error!("Error while saving dxf: {}", err)).ok();
+    let layers = extract_layers(&in_file);
+    connect_layers(&layers, dxf_file, &output_path, &output_path_svg);
+    
 }
 fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     let mut layers = HashMap::<String, Layer>::default();
@@ -164,98 +168,7 @@ fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
 
     layers
 }
-//makes an svg from a table of objects
-fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
-    //
-    let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
-    for (name, layer) in layers.iter() {
-        layer_polylines.insert(name.clone(), layer.into_polylines());
-    }
 
-    let all_polylines: Vec<PolyLine> = layer_polylines
-        .values()
-        .flat_map(|v| v.iter().cloned())
-        .collect();
-
-    // compute stats for polylines
-    let x_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.x_values.clone())
-        .collect();
-
-    let y_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.y_values.clone())
-        .collect();
-
-    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
-    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
-    let max_x = x_values.iter().copied().max_by(cmp).unwrap();
-    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
-    let max_y = y_values.iter().copied().max_by(cmp).unwrap();
-
-    // create document
-    let width = max_x - min_x;
-    let height = max_y - min_y;
-    let mut document = svg::Document::new()
-        // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
-        .set::<_, (f64, f64, f64, f64)>("viewBox", (0.0, 0.0, width, height))
-        .set(
-            "xmlns:inkscape",
-            "http://www.inkscape.org/namespaces/inkscape",
-        )
-        .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
-
-    // insert polylines into svg paths
-    for (layer_name, polylines) in layer_polylines.iter() {
-        let mut group = svg_element::Group::new()
-            .set("inkscape:label", layer_name.as_str())
-            .set("inkscape:groupmode", "layer")
-            .set("style", "display:inline");
-
-        for polyline in polylines.iter() {
-            let mut path_data = svg_element::path::Data::new();
-            let x_values = polyline.x_values.iter();
-            let y_values = polyline.y_values.iter();
-            let mut xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - max_y));
-
-            if let Some((x, y)) = xy_values.next() {
-                path_data = path_data.move_to((x, -y));
-            }
-
-            for (x, y) in xy_values {
-                path_data = path_data.line_to((x, -y));
-            }
-
-            let stroke: &str = match polyline.stroke.len() {
-                0 => "black",
-                _ => polyline.stroke.as_str(),
-            };
-
-            if polyline.is_closed {
-                path_data = path_data.close();
-            }
-
-            let path = svg_element::Path::new()
-                .set("fill", "none")
-                .set("stroke", stroke)
-                .set("stroke-width", "0.14px")
-                .set("d", path_data);
-
-            group = group.add(path);
-        }
-
-        document = document.add(group);
-
-        info!("created svg layer: {}", layer_name);
-    }
-
-    // write to file
-    match svg::save(&output_path, &document) {
-        Ok(_) => info!("Created file: {}", output_path),
-        Err(err) => panic!("Error: {}", err),
-    };
-}
 fn make_polyline_circle(num_segments: usize, c: &dxfe::Circle) -> PolyLine {
     _make_polyline_ellipse(
         num_segments,
@@ -367,4 +280,169 @@ fn _make_polyline_ellipse(
         stroke: "red".into(),
         is_closed,
     }
+}
+
+fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, output_path: &String, output_path_svg: &String){
+    dxf_file.clear();
+    dxf_file.normalize();
+    
+    let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+    for (name, layer) in layers.iter() {
+        layer_polylines.insert(name.clone(), layer.into_polylines());
+    }
+
+    let all_polylines: Vec<PolyLine> = layer_polylines
+        .values()
+        .flat_map(|v| v.iter().cloned())
+        .collect();
+
+    // compute stats for polylines
+    let x_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.x_values.clone())
+        .collect();
+
+    let y_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.y_values.clone())
+        .collect();
+
+    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
+    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
+    let max_x = x_values.iter().copied().max_by(cmp).unwrap();
+    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
+    let max_y = y_values.iter().copied().max_by(cmp).unwrap();
+
+    for(layer_name, polylines) in layer_polylines.iter(){
+        println!("Starting layer {}", layer_name);
+        let mut new_layer = dxf::tables::Layer::default();
+        new_layer.name = layer_name.clone();
+        dxf_file.add_layer(new_layer);
+        for polyline in polylines.iter(){
+            if !polyline.is_closed{
+                continue;
+            }
+            let x_values = polyline.x_values.iter();
+            let y_values = polyline.y_values.iter();
+            let xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - min_y));
+            
+            let mut new_polyline = dxf::entities::LwPolyline::default();
+            let mut counter = 0;
+            for(x, y) in xy_values{
+                let mut vertex = dxf::LwPolylineVertex::default();
+                vertex.x = x;
+                vertex.y = y;
+                vertex.id = counter;
+                counter += 1;
+                new_polyline.vertices.push(vertex);
+            }
+            let mut entity = dxf::entities::Entity::new(dxf::entities::EntityType::LwPolyline(new_polyline));
+            let mut common = dxf::entities::EntityCommon::default();
+            common.layer = layer_name.clone();
+            entity.common = common;
+            dxf_file.add_entity(entity);
+        }
+    }
+    for layer in dxf_file.layers(){
+        println!("Contains layer: {}", &layer.name);
+    }
+    let mut counter = 0;
+    for entity in dxf_file.entities(){
+        counter += 1;
+    }
+    println!("Entities: {}", counter);
+    dxf::Drawing::save_file(&dxf_file, output_path).map_err(|err| error!("Error while saving dxf: {}", err)).ok();
+    let layers = extract_layers(&dxf_file);
+    write_layers_to_svg(&layers, output_path_svg.clone());
+}
+fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
+    //
+    let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+    for (name, layer) in layers.iter() {
+        layer_polylines.insert(name.clone(), layer.into_polylines());
+    }
+
+    let all_polylines: Vec<PolyLine> = layer_polylines
+        .values()
+        .flat_map(|v| v.iter().cloned())
+        .collect();
+
+    // compute stats for polylines
+    let x_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.x_values.clone())
+        .collect();
+
+    let y_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.y_values.clone())
+        .collect();
+
+    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
+    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
+    let max_x = x_values.iter().copied().max_by(cmp).unwrap();
+    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
+    let max_y = y_values.iter().copied().max_by(cmp).unwrap();
+
+    // create document
+    let width = max_x - min_x;
+    let height = max_y - min_y;
+    let mut document = svg::Document::new()
+        // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
+        .set::<_, (f64, f64, f64, f64)>("viewBox", (0.0, 0.0, width, height))
+        .set(
+            "xmlns:inkscape",
+            "http://www.inkscape.org/namespaces/inkscape",
+        )
+        .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
+
+    // insert polylines into svg paths
+    for (layer_name, polylines) in layer_polylines.iter() {
+        let mut group = svg_element::Group::new()
+            .set("inkscape:label", layer_name.as_str())
+            .set("inkscape:groupmode", "layer")
+            .set("style", "display:inline");
+
+        for polyline in polylines.iter() {
+            let mut path_data = svg_element::path::Data::new();
+            let x_values = polyline.x_values.iter();
+            let y_values = polyline.y_values.iter();
+            let mut xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - max_y));
+
+            if let Some((x, y)) = xy_values.next() {
+                path_data = path_data.move_to((x, -y));
+            }
+
+            for (x, y) in xy_values {
+                path_data = path_data.line_to((x, -y));
+            }
+
+            let stroke: &str = match polyline.stroke.len() {
+                0 => "black",
+                _ => polyline.stroke.as_str(),
+            };
+
+            if polyline.is_closed {
+                path_data = path_data.close();
+            }
+
+            let path = svg_element::Path::new()
+                .set("fill", "none")
+                .set("stroke", stroke)
+                .set("stroke-width", "0.03px")
+                .set("d", path_data);
+
+            group = group.add(path);
+        }
+
+        document = document.add(group);
+
+        info!("created svg layer: {}", layer_name);
+    }
+
+    // write to file
+    match svg::save(&output_path, &document) {
+        Ok(_) => info!("Created file: {}", output_path),
+        Err(err) => panic!("Error: {}", err),
+    };
 }
