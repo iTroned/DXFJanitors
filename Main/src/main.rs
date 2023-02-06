@@ -2,7 +2,7 @@ const NUM_SEGMENTS: usize = 16;
 
 use clap::Parser;
 
-use dxf::{entities::{self as dxfe, Line, LwPolyline}, Point};
+use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point};
 use std::{collections::HashMap, f64::consts::PI};
 use svg::node::element as svg_element;
 use dxfe::EntityType as ET;
@@ -12,7 +12,6 @@ pub struct PolyLine {
     is_closed: bool,
     x_values: Vec<f64>,
     y_values: Vec<f64>,
-    stroke: String,
 }
 pub struct SelfPoint {
     x: f64,
@@ -28,7 +27,6 @@ impl From<dxfe::Line> for PolyLine {
         Self {
             x_values: vec![e.p1.x, e.p2.x],
             y_values: vec![e.p1.y, e.p2.y],
-            stroke: "black".into(),
             is_closed: false,
         }
     }
@@ -39,7 +37,6 @@ impl From<dxfe::LwPolyline> for PolyLine {
         Self {
             x_values: e.vertices.iter().map(|v| v.x).collect(),
             y_values: e.vertices.iter().map(|v| v.y).collect(),
-            stroke: "black".into(),
             is_closed: e.get_is_closed(),
         }
     }
@@ -122,7 +119,7 @@ fn main() {
 }
 fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     let mut layers = HashMap::<String, Layer>::default();
-
+    
     // initialize layers
     info!("initializing {} layers", dxf_file.layers().count());
     for dxf_layer in dxf_file.layers() {
@@ -285,7 +282,6 @@ fn _make_polyline_ellipse(
     PolyLine {
         x_values,
         y_values,
-        stroke: "red".into(),
         is_closed,
     }
 }
@@ -349,9 +345,9 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
             
         }
         for polyline in polylines.iter(){
-            if !polyline.is_closed{
+            /*if polyline.is_closed{
                 continue;
-            }
+            }*/
             let x_values = polyline.x_values.iter();
             let y_values = polyline.y_values.iter();
             let xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - min_y));
@@ -378,7 +374,7 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
         println!("Contains layer: {}", &layer.name);
     }
     let mut counter = 0;
-    for entity in dxf_file.entities(){
+    for _entity in dxf_file.entities(){
         counter += 1;
     }
     println!("Entities: {}", counter);
@@ -387,10 +383,13 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
     write_layers_to_svg(&layers, output_path_svg.clone());
 }
 fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
-    //
+    //Colors to use when creating svg.. The last one is used first
+    //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
     let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+    //let mut layer_color = HashMap::<String, String>::default();
     for (name, layer) in layers.iter() {
         layer_polylines.insert(name.clone(), layer.into_polylines());
+        //layer_color.insert(name.clone(), colors.pop().unwrap().to_owned());
     }
 
     let all_polylines: Vec<PolyLine> = layer_polylines
@@ -427,13 +426,19 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
         )
         .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
 
+        
     // insert polylines into svg paths
-    for (layer_name, polylines) in layer_polylines.iter() {
+    let mut colors = vec!["cyan", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "gold", "darkred", "limegreen", "chocolate", "blueviolet", "lime", "purple", "orange", "yellow", "green", "blue", "red"];
+    for (name, polylines) in layer_polylines.iter() {
+        let color = 
+        match colors.pop(){
+            None => "black",
+            Some(c) => c,
+        };
         let mut group = svg_element::Group::new()
-            .set("inkscape:label", layer_name.as_str())
+            .set("inkscape:label", name.as_str())
             .set("inkscape:groupmode", "layer")
             .set("style", "display:inline");
-
         for polyline in polylines.iter() {
             let mut path_data = svg_element::path::Data::new();
             let x_values = polyline.x_values.iter();
@@ -448,18 +453,13 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
                 path_data = path_data.line_to((x, -y));
             }
 
-            let stroke: &str = match polyline.stroke.len() {
-                0 => "black",
-                _ => polyline.stroke.as_str(),
-            };
-
             if polyline.is_closed {
                 path_data = path_data.close();
             }
 
             let path = svg_element::Path::new()
                 .set("fill", "none")
-                .set("stroke", stroke)
+                .set("stroke", color)
                 .set("stroke-width", "0.03px")
                 .set("d", path_data);
 
@@ -468,7 +468,7 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
 
         document = document.add(group);
 
-        info!("created svg layer: {}", layer_name);
+        info!("created svg layer: {}", name);
     }
 
     // write to file

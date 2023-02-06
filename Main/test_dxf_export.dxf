@@ -333,11 +333,11 @@ $SKPOLY
   9
 $TDCREATE
  40
-2459979.540891203564
+2459982.663946759421
   9
 $TDUPDATE
  40
-2459979.540891203564
+2459982.663946759421
   9
 $TDINDWG
  40
@@ -401,7 +401,7 @@ $HANDLING
   9
 $HANDSEED
   5
-500
+FFB
   9
 $SURFTAB1
  70
@@ -903,166 +903,6 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-PDF_A-Z9919-G-COL19
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-14
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_Q-SPCQ
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-1D
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_P-SANR-FIXT
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-67
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-GLAZ-CWMG
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-13C
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-DETL
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-144
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-DOOR
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-193
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-GLAZ-CURT
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-238
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-FLOR-HRAL
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-265
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_Q-CASE
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-29C
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-DETL-GENF
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-29E
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
 PDF_0
  70
      0
@@ -1073,87 +913,7 @@ CONTINUOUS
   0
 LAYER
   5
-29F
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-GLAZ
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-2A4
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_G-IMPT
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-2B7
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-0
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-2B8
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-GENM
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-2F0
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-G25 JA12-G-BLDEXIST
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-494
+12
 100
 AcDbSymbolTableRecord
 100
@@ -1169,7 +929,247 @@ CONTINUOUS
   0
 LAYER
   5
-49C
+25E
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-DETL-GENF
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+26D
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-GLAZ
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+272
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_Q-SPCQ
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+293
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-Z9919-G-COL19
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+2B0
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+0
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+2B1
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-DETL
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+2BA
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-DOOR
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+369
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-DOOR-FRAM
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+3CE
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_P-SANR-FIXT
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+546
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-GLAZ-CWMG
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+6C5
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-FLOR-HRAL
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+821
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_Q-CASE
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+8F0
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_G-IMPT
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+945
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-G25 JA12-G-BLDEXIST
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+E05
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-GLAZ-CURT
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+EAA
 100
 AcDbSymbolTableRecord
 100
@@ -1185,13 +1185,13 @@ CONTINUOUS
   0
 LAYER
   5
-49D
+ECE
 100
 AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-PDF_A-DOOR-FRAM
+PDF_A-GENM
  70
      0
  62
