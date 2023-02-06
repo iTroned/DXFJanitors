@@ -2,7 +2,7 @@ const NUM_SEGMENTS: usize = 16;
 
 use clap::Parser;
 
-use dxf::entities::{self as dxfe, Line, LwPolyline};
+use dxf::{entities::{self as dxfe, Line, LwPolyline}, Point};
 use std::{collections::HashMap, f64::consts::PI};
 use svg::node::element as svg_element;
 use dxfe::EntityType as ET;
@@ -14,7 +14,15 @@ pub struct PolyLine {
     y_values: Vec<f64>,
     stroke: String,
 }
-
+pub struct SelfPoint {
+    x: f64,
+    y: f64
+}
+impl SelfPoint {
+    fn new(x: f64, y: f64) -> Self {
+        Self {x, y}
+    }
+}
 impl From<dxfe::Line> for PolyLine {
     fn from(e: dxfe::Line) -> Self {
         Self {
@@ -318,6 +326,28 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
         let mut new_layer = dxf::tables::Layer::default();
         new_layer.name = layer_name.clone();
         dxf_file.add_layer(new_layer);
+        let mut xy_ends: Vec<SelfPoint> = Vec::new();
+        //Adds all the open vertexes to a map
+        for polyline in polylines.iter(){
+            if polyline.is_closed{
+                continue;
+            }
+            xy_ends.push(SelfPoint::new(match polyline.x_values.first() {
+                None => 0.0,
+                Some(x) => x.clone(),
+            }, match polyline.y_values.first() {
+                None => 0.0,
+                Some(x) => x.clone(),
+            }));
+            xy_ends.push(SelfPoint::new(match polyline.x_values.last() {
+                None => 0.0,
+                Some(x) => x.clone(),
+            }, match polyline.y_values.last() {
+                None => 0.0,
+                Some(x) => x.clone(),
+            }));
+            
+        }
         for polyline in polylines.iter(){
             if !polyline.is_closed{
                 continue;
@@ -336,6 +366,7 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
                 counter += 1;
                 new_polyline.vertices.push(vertex);
             }
+            new_polyline.set_is_closed(polyline.is_closed);
             let mut entity = dxf::entities::Entity::new(dxf::entities::EntityType::LwPolyline(new_polyline));
             let mut common = dxf::entities::EntityCommon::default();
             common.layer = layer_name.clone();

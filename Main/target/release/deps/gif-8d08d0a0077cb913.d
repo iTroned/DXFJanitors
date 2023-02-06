@@ -1,0 +1,13 @@
+D:\VSCode\DXFJanitors\Main\target\release\deps\gif-8d08d0a0077cb913.rmeta: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\traits.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\common.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\decoder.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\encoder.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\../README.md
+
+D:\VSCode\DXFJanitors\Main\target\release\deps\libgif-8d08d0a0077cb913.rlib: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\traits.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\common.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\decoder.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\encoder.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\../README.md
+
+D:\VSCode\DXFJanitors\Main\target\release\deps\gif-8d08d0a0077cb913.d: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\traits.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\common.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\decoder.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\encoder.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\../README.md
+
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\lib.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\traits.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\common.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\mod.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\reader\decoder.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\encoder.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\gif-0.11.4\src\../README.md:
