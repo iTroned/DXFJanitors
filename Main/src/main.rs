@@ -18,11 +18,26 @@ pub struct PolyLine {
 #[derive(Clone, Copy)]
 pub struct SelfPoint {
     x: f64,
-    y: f64
+    y: f64,
 }
+
 impl SelfPoint {
     fn new(x: f64, y: f64) -> Self {
         Self {x, y}
+    }
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+#[derive(Clone, Copy)]
+pub struct BuddyPoint {
+    x: f64,
+    y: f64,
+    buddy: SelfPoint
+}
+impl BuddyPoint {
+    fn new(x: f64, y: f64, buddy: SelfPoint) -> Self {
+        Self {x, y, buddy}
     }
     fn clone(&self) -> Self {
         *self
@@ -364,7 +379,7 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
                 let mut vertex = dxf::LwPolylineVertex::default();
                 if counter == 0 {
                     let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
-                    let connect_point = connect_points(a1, a2, b1, b2)
+                    //let connect_point = connect_points(a1, a2, b1, b2)
                     vertex.x = closest_point.x;
                     vertex.y = closest_point.y;
                 }
