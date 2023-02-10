@@ -7,12 +7,15 @@ use std::{collections::HashMap, f64::consts::PI};
 use svg::node::element as svg_element;
 use dxfe::EntityType as ET;
 use log::{error, info, warn};
+/*use line_intersection::{LineInterval, LineRelation};
+use geo::{Coordinate, Line as GeoLine, Point as GeoPoint};*/
 #[derive(Clone, Default)]
 pub struct PolyLine {
     is_closed: bool,
     x_values: Vec<f64>,
     y_values: Vec<f64>,
 }
+#[derive(Clone, Copy)]
 pub struct SelfPoint {
     x: f64,
     y: f64
@@ -20,6 +23,9 @@ pub struct SelfPoint {
 impl SelfPoint {
     fn new(x: f64, y: f64) -> Self {
         Self {x, y}
+    }
+    fn clone(&self) -> Self {
+        *self
     }
 }
 impl From<dxfe::Line> for PolyLine {
@@ -356,8 +362,17 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
             let mut counter = 0;
             for(x, y) in xy_values{
                 let mut vertex = dxf::LwPolylineVertex::default();
-                vertex.x = x;
-                vertex.y = y;
+                if counter == 0 {
+                    let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
+                    let connect_point = connect_points(a1, a2, b1, b2)
+                    vertex.x = closest_point.x;
+                    vertex.y = closest_point.y;
+                }
+                else{
+                    vertex.x = x;
+                    vertex.y = y;
+                }
+                
                 vertex.id = counter;
                 counter += 1;
                 new_polyline.vertices.push(vertex);
@@ -476,4 +491,31 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
         Ok(_) => info!("Created file: {}", output_path),
         Err(err) => panic!("Error: {}", err),
     };
+}
+
+fn connect_points(a1: SelfPoint, a2: SelfPoint, b1: SelfPoint, b2: SelfPoint) -> SelfPoint{
+    //y = mx + b
+    let a_m = a2.y - a1.y / a2.x - a1.x;
+    let a_b = a1.y - a_m * a1.x;
+    let b_m = b2.y - b1.y / b2.x - b1.x;
+    let b_b = b1.y - b_m * b1.x;
+
+    //a_m * x + a_b = b_m * x + b_b
+
+    let x = (b_b - a_b) / (a_m - b_m);
+    let y = a_m * x + a_b;
+    let new_point = SelfPoint::new(x, y);
+    new_point
+}
+fn find_closest_point(point: SelfPoint, vector: &Vec<SelfPoint>) -> SelfPoint{
+    let mut closest_point = vector.first().to_owned().unwrap().clone();
+    let mut closest_distance = f64::sqrt((closest_point.x - point.x) * (closest_point.x - point.x) + (closest_point.y - point.y) * (closest_point.y - point.y));
+    for v_point in vector{
+        let new_distance = f64::sqrt((v_point.x - point.x) * (v_point.x - point.x) + (v_point.y - point.y) * (v_point.y - point.y));
+        if new_distance < closest_distance {
+            closest_distance = new_distance;
+            closest_point = v_point.clone();
+        }
+    }
+    closest_point
 }
