@@ -333,11 +333,11 @@ $SKPOLY
   9
 $TDCREATE
  40
-2459982.663946759421
+2459986.670856481418
   9
 $TDUPDATE
  40
-2459982.663946759421
+2459986.670856481418
   9
 $TDINDWG
  40
@@ -903,54 +903,6 @@ AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-PDF_0
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-12
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_S-COLS
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-25E
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-DETL-GENF
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-26D
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
 PDF_A-GLAZ
  70
      0
@@ -961,71 +913,7 @@ CONTINUOUS
   0
 LAYER
   5
-272
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_Q-SPCQ
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-293
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-Z9919-G-COL19
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-2B0
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-0
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-2B1
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-DETL
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-2BA
+15
 100
 AcDbSymbolTableRecord
 100
@@ -1041,13 +929,13 @@ CONTINUOUS
   0
 LAYER
   5
-369
+C4
 100
 AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-PDF_A-DOOR-FRAM
+PDF_Q-SPCQ
  70
      0
  62
@@ -1057,13 +945,13 @@ CONTINUOUS
   0
 LAYER
   5
-3CE
+E5
 100
 AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-PDF_P-SANR-FIXT
+0
  70
      0
  62
@@ -1073,13 +961,13 @@ CONTINUOUS
   0
 LAYER
   5
-546
+E6
 100
 AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
-PDF_A-GLAZ-CWMG
+PDF_S-COLS
  70
      0
  62
@@ -1089,23 +977,7 @@ CONTINUOUS
   0
 LAYER
   5
-6C5
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-FLOR-HRAL
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-821
+332
 100
 AcDbSymbolTableRecord
 100
@@ -1121,39 +993,7 @@ CONTINUOUS
   0
 LAYER
   5
-8F0
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_G-IMPT
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-945
-100
-AcDbSymbolTableRecord
-100
-AcDbLayerTableRecord
-  2
-PDF_A-G25 JA12-G-BLDEXIST
- 70
-     0
- 62
-     7
-  6
-CONTINUOUS
-  0
-LAYER
-  5
-E05
+401
 100
 AcDbSymbolTableRecord
 100
@@ -1169,7 +1009,103 @@ CONTINUOUS
   0
 LAYER
   5
-EAA
+4A6
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-GLAZ-CWMG
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+625
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-DOOR-FRAM
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+68A
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-Z9919-G-COL19
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+6A7
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-DETL-GENF
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+6B6
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-DETL
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+6BF
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_P-SANR-FIXT
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+837
 100
 AcDbSymbolTableRecord
 100
@@ -1185,13 +1121,77 @@ CONTINUOUS
   0
 LAYER
   5
-ECE
+85B
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_G-IMPT
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+8B0
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-FLOR-HRAL
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+A0C
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_0
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+A0E
 100
 AcDbSymbolTableRecord
 100
 AcDbLayerTableRecord
   2
 PDF_A-GENM
+ 70
+     0
+ 62
+     7
+  6
+CONTINUOUS
+  0
+LAYER
+  5
+B3B
+100
+AcDbSymbolTableRecord
+100
+AcDbLayerTableRecord
+  2
+PDF_A-G25 JA12-G-BLDEXIST
  70
      0
  62

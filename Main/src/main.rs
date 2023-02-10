@@ -343,26 +343,85 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
         let mut new_layer = dxf::tables::Layer::default();
         new_layer.name = layer_name.clone();
         dxf_file.add_layer(new_layer);
-        let mut xy_ends: Vec<SelfPoint> = Vec::new();
+        let mut xy_ends: Vec<BuddyPoint> = Vec::new();
         //Adds all the open vertexes to a map
         for polyline in polylines.iter(){
             if polyline.is_closed{
                 continue;
             }
-            xy_ends.push(SelfPoint::new(match polyline.x_values.first() {
-                None => 0.0,
-                Some(x) => x.clone(),
-            }, match polyline.y_values.first() {
-                None => 0.0,
-                Some(x) => x.clone(),
-            }));
-            xy_ends.push(SelfPoint::new(match polyline.x_values.last() {
-                None => 0.0,
-                Some(x) => x.clone(),
-            }, match polyline.y_values.last() {
-                None => 0.0,
-                Some(x) => x.clone(),
-            }));
+            let len: i32 = polyline.x_values.len().try_into().unwrap();
+            //println!("Length: {}", len);
+            let mut x_val = polyline.x_values.clone();
+            let mut y_val = polyline.y_values.clone();
+            if len == 2 {
+                xy_ends.push(BuddyPoint::new(match polyline.x_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, SelfPoint::new(match polyline.x_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                })));
+                xy_ends.push(BuddyPoint::new(match polyline.x_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, SelfPoint::new(match polyline.x_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                })));
+                
+            }
+            else if len == 3 {
+                let x1 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let x2 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let x3 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y1 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y2 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y3 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let mid_point = SelfPoint::new(x2, y2);
+                xy_ends.push(BuddyPoint::new(x1, y1, mid_point.clone()));
+                xy_ends.push(BuddyPoint::new(x3, y3, mid_point.clone()));
+            }
+            else{
+                //Adds the last coordinates to the vector
+                xy_ends.push(BuddyPoint::new(x_val.pop().unwrap(), y_val.pop().unwrap(), SelfPoint::new(x_val.pop().unwrap(), y_val.pop().unwrap())));
+                let mut i = len - 4;
+                while i > 0 {
+                    x_val.pop();
+                    y_val.pop();
+                }
+            }
+            
+
             
         }
         for polyline in polylines.iter(){
@@ -377,17 +436,18 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
             let mut counter = 0;
             for(x, y) in xy_values{
                 let mut vertex = dxf::LwPolylineVertex::default();
-                if counter == 0 {
+                /*if counter == 0 {
                     let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
-                    //let connect_point = connect_points(a1, a2, b1, b2)
+                    //let connect_point = connect_points(SelfPoint::new(closest_point.x, closest_point.y), SelfPoint::new(closest_point.buddy.x, closest_point.buddy.y), b1, b2)
                     vertex.x = closest_point.x;
                     vertex.y = closest_point.y;
                 }
                 else{
                     vertex.x = x;
                     vertex.y = y;
-                }
-                
+                }*/
+                vertex.x = x;
+                vertex.y = y;
                 vertex.id = counter;
                 counter += 1;
                 new_polyline.vertices.push(vertex);
@@ -522,14 +582,14 @@ fn connect_points(a1: SelfPoint, a2: SelfPoint, b1: SelfPoint, b2: SelfPoint) ->
     let new_point = SelfPoint::new(x, y);
     new_point
 }
-fn find_closest_point(point: SelfPoint, vector: &Vec<SelfPoint>) -> SelfPoint{
-    let mut closest_point = vector.first().to_owned().unwrap().clone();
+fn find_closest_point(point: SelfPoint, vector: &Vec<BuddyPoint>) -> &BuddyPoint{
+    let mut closest_point = vector.first().to_owned().unwrap();
     let mut closest_distance = f64::sqrt((closest_point.x - point.x) * (closest_point.x - point.x) + (closest_point.y - point.y) * (closest_point.y - point.y));
     for v_point in vector{
         let new_distance = f64::sqrt((v_point.x - point.x) * (v_point.x - point.x) + (v_point.y - point.y) * (v_point.y - point.y));
         if new_distance < closest_distance {
             closest_distance = new_distance;
-            closest_point = v_point.clone();
+            closest_point = v_point;
         }
     }
     closest_point
