@@ -418,7 +418,23 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
                 while i > 0 {
                     x_val.pop();
                     y_val.pop();
+                    i -= 1;
                 }
+                let x1 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y1 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                xy_ends.push(BuddyPoint::new(match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                }, match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                }, SelfPoint::new(x1, y1)));
             }
             
 
@@ -436,18 +452,18 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
             let mut counter = 0;
             for(x, y) in xy_values{
                 let mut vertex = dxf::LwPolylineVertex::default();
-                /*if counter == 0 {
+                if counter == 0 && !polyline.is_closed {
+                    
                     let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
-                    //let connect_point = connect_points(SelfPoint::new(closest_point.x, closest_point.y), SelfPoint::new(closest_point.buddy.x, closest_point.buddy.y), b1, b2)
-                    vertex.x = closest_point.x;
-                    vertex.y = closest_point.y;
+                    let connect_point = connect_points(SelfPoint::new(closest_point.x, closest_point.y), SelfPoint::new(closest_point.buddy.x, closest_point.buddy.y), SelfPoint::new(x, y), b2)
+                    vertex.x = connect_point.x;
+                    vertex.y = connect_point.y;
                 }
                 else{
                     vertex.x = x;
                     vertex.y = y;
-                }*/
-                vertex.x = x;
-                vertex.y = y;
+                }
+                
                 vertex.id = counter;
                 counter += 1;
                 new_polyline.vertices.push(vertex);
