@@ -457,10 +457,12 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
                 let mut vertex = dxf::LwPolylineVertex::default();
                 if counter == 0 && !polyline.is_closed {
                     
-                    let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
+                    /*let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
                     let connect_point = connect_points(SelfPoint::new(closest_point.x, closest_point.y), SelfPoint::new(closest_point.buddy.x, closest_point.buddy.y), SelfPoint::new(x, y), SelfPoint::new(x, y));
                     vertex.x = connect_point.x;
-                    vertex.y = connect_point.y;
+                    vertex.y = connect_point.y;*/
+                    vertex.x = x;
+                    vertex.y = y;
                 }
                 else{
                     vertex.x = x;
