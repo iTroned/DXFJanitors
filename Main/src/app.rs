@@ -8,14 +8,12 @@ pub struct SvgApp {
 
 }
 
-
-
 impl Default for SvgApp {
     fn default() -> Self {
         Self {
             svg_image: egui_extras::RetainedImage::from_svg_bytes_with_size(
-                "../test1_dxf_export.svg",
-                include_bytes!("../test1_dxf_export.svg"),
+                "../test1_dxf_export.svg", //path of svg file to display
+                include_bytes!("../test1_dxf_export.svg"), 
                 egui_extras::image::FitTo::Original,
             )
             .unwrap(),
@@ -23,6 +21,7 @@ impl Default for SvgApp {
     }
 }
 
+//design of the app, look at documenation for inspiration
 impl eframe::App for SvgApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
