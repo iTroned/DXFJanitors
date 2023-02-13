@@ -15,6 +15,7 @@ pub struct PolyLine {
     x_values: Vec<f64>,
     y_values: Vec<f64>,
 }
+
 #[derive(Clone, Copy)]
 pub struct SelfPoint {
     x: f64,
@@ -344,11 +345,13 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
         new_layer.name = layer_name.clone();
         dxf_file.add_layer(new_layer);
         let mut xy_ends: Vec<BuddyPoint> = Vec::new();
+        //let mut end_points = HashMap::<PolyLine, Vec<BuddyPoint>>::default();
         //Adds all the open vertexes to a map
         for polyline in polylines.iter(){
             if polyline.is_closed{
                 continue;
             }
+            
             let len: i32 = polyline.x_values.len().try_into().unwrap();
             //println!("Length: {}", len);
             let mut x_val = polyline.x_values.clone();
@@ -455,7 +458,7 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
                 if counter == 0 && !polyline.is_closed {
                     
                     let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
-                    let connect_point = connect_points(SelfPoint::new(closest_point.x, closest_point.y), SelfPoint::new(closest_point.buddy.x, closest_point.buddy.y), SelfPoint::new(x, y), b2)
+                    let connect_point = connect_points(SelfPoint::new(closest_point.x, closest_point.y), SelfPoint::new(closest_point.buddy.x, closest_point.buddy.y), SelfPoint::new(x, y), SelfPoint::new(x, y));
                     vertex.x = connect_point.x;
                     vertex.y = connect_point.y;
                 }
@@ -475,6 +478,9 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
             entity.common = common;
             dxf_file.add_entity(entity);
         }
+    }
+    fn add_closed_polylines(){
+        
     }
     for layer in dxf_file.layers(){
         println!("Contains layer: {}", &layer.name);
@@ -603,10 +609,43 @@ fn find_closest_point(point: SelfPoint, vector: &Vec<BuddyPoint>) -> &BuddyPoint
     let mut closest_distance = f64::sqrt((closest_point.x - point.x) * (closest_point.x - point.x) + (closest_point.y - point.y) * (closest_point.y - point.y));
     for v_point in vector{
         let new_distance = f64::sqrt((v_point.x - point.x) * (v_point.x - point.x) + (v_point.y - point.y) * (v_point.y - point.y));
-        if new_distance < closest_distance {
+        if new_distance == 0. {
+            continue;
+        }
+        if new_distance < closest_distance || closest_distance == 0. {
             closest_distance = new_distance;
             closest_point = v_point;
         }
     }
     closest_point
+}
+//angle at the point two linear functions intercept
+//angle for two linear lines: angle = tan^-1 (|m2-m1|/(1+m1m2)) Where m1 is the slope of function A and m2 is the slope of function B
+fn angle_between_lines(m1: f64, m2: f64) -> f64{
+    let angle = ((m2-m1).abs()/(1.0+m1*m2)).atan();
+    angle * 180. / PI
+}
+
+//angle between vectors 
+//angle = arccos((a*b)/|a||b|) -> where a*b is the dot product and |a| and |b| is the length of the vectors
+fn angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
+    //in a tuple the values are v1.0 and v1.1
+    let length_v1 = ((v1.0 * v1.0) + (v1.1*v1.1)).sqrt(); //the length of a vector is |u| = sqrt(x^2+y^2)
+    let length_v2 = ((v2.0*v2.0) + (v2.1*v2.1)).sqrt();
+
+    let dotproduct = ((v1.0*v2.0) + (v1.1*v2.1)); //dot product of a 2D vector u*v = x1x2 + y1y2
+
+    let angle = (dotproduct/(length_v1 * length_v2)).acos();
+    angle * 180. / PI //return angle in degrees (f64)
+}
+
+//B is the vertex where the angle is calculated
+//function creates two vectors and uses the function angle vectors to return the angle
+fn angle_three_poiints(A: (f64, f64), B: (f64, f64), C: (f64, f64)) -> f64{
+    //creating vectors: AB and BC
+    let AB = (B.0 - A.0, B.1 - A.1); //vector AB = (B1 - A1, B2 - A2)
+    let BC = (C.0 - B.0, C.1 - B.1);
+
+    let angle = angle_vectors(AB, BC);
+    angle //return angle
 }
