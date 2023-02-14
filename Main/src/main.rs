@@ -1,3 +1,6 @@
+#![warn(clippy::all, rust_2018_idioms)]
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
+
 const NUM_SEGMENTS: usize = 16;
 
 use clap::Parser;
@@ -118,14 +121,15 @@ impl Layer {
         polylines
     }
 }
+#[cfg(not(target_arch = "wasm32"))]
 fn main() {
-    // load logger from environment
+   // load logger from environment
     env_logger::init_from_env(
         env_logger::Env::new()
             .filter("LOG")
             .write_style("LOG_STYLE")
             ,
-    );
+    ); 
     
     let input_path = "test.dxf".to_string();
 
@@ -136,7 +140,17 @@ fn main() {
     let mut dxf_file = dxf::Drawing::new();
     dxf::Drawing::save_file(&in_file, "test_export.dxf").map_err(|err| error!("Error while saving dxf: {}", err)).ok();
     let layers = extract_layers(&in_file);
-    connect_layers(&layers, dxf_file, &output_path, &output_path_svg);
+    connect_layers(&layers, dxf_file, &output_path, &output_path_svg); 
+
+    //EGUI
+    let native_options = eframe::NativeOptions::default();
+    eframe::run_native(
+        "eframe template",
+        native_options,
+        Box::new(|cc| Box::new(dxf_janitors::SvgApp::default())),
+    );
+
+    
     
 }
 fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
