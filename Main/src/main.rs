@@ -484,6 +484,34 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
     fn add_closed_polylines(){
         
     }
+    fn add_layer_to_file(dxf_file: &mut dxf::Drawing, layer: &Layer, min_x: &f64, min_y: &f64){
+        for polyline in layer.into_polylines(){
+            add_polyline_to_file(dxf_file, &polyline, min_x, min_y, &layer.name);
+        }
+    }
+    fn add_polyline_to_file(dxf_file: &mut dxf::Drawing, polyline: &PolyLine, min_x: &f64, min_y: &f64, layer_name: &String){
+        let mut new_polyline = dxf::entities::LwPolyline::default();
+
+        let x_values = polyline.x_values.iter();
+        let y_values = polyline.y_values.iter();
+        let xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - min_y));
+        let mut counter = 0;
+        for(x, y) in xy_values{
+            let mut vertex = dxf::LwPolylineVertex::default();
+            vertex.x = x;
+            vertex.y = y;
+            vertex.id = counter;
+            counter += 1;
+            new_polyline.vertices.push(vertex);
+        }
+        new_polyline.set_is_closed(polyline.is_closed);
+        let mut entity = dxf::entities::Entity::new(dxf::entities::EntityType::LwPolyline(new_polyline));
+        let mut common = dxf::entities::EntityCommon::default();
+        common.layer = layer_name.clone();
+        entity.common = common;
+        dxf_file.add_entity(entity);
+    }
+
     for layer in dxf_file.layers(){
         println!("Contains layer: {}", &layer.name);
     }
@@ -542,8 +570,11 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
 
         
     // insert polylines into svg paths
+
+    //Colors to use when creating layers. Priority from right to left
     let mut colors = vec!["cyan", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "gold", "darkred", "limegreen", "chocolate", "blueviolet", "lime", "purple", "orange", "yellow", "green", "blue", "red"];
     for (name, polylines) in layer_polylines.iter() {
+        //Uses the next color for this layer. If none are left use black
         let color = 
         match colors.pop(){
             None => "black",
