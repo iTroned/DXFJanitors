@@ -1,0 +1,11 @@
+d:\VSCode\DXFJanitors\Main\target\debug\deps\accesskit_windows-dedc8657b83e6389.rmeta: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\node.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\text.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\util.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\adapter.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\init.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\subclass.rs
+
+d:\VSCode\DXFJanitors\Main\target\debug\deps\accesskit_windows-dedc8657b83e6389.d: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\node.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\text.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\util.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\adapter.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\init.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\subclass.rs
+
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\lib.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\node.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\text.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\util.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\adapter.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\init.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\accesskit_windows-0.12.0\src\subclass.rs:

@@ -1,0 +1,12 @@
+D:\VSCode\DXFJanitors\Main\target\debug\deps\eframe-10ccce45081199b8.rmeta: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\epi.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\epi_integration.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\run.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\file_storage.rs
+
+D:\VSCode\DXFJanitors\Main\target\debug\deps\libeframe-10ccce45081199b8.rlib: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\epi.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\epi_integration.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\run.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\file_storage.rs
+
+D:\VSCode\DXFJanitors\Main\target\debug\deps\eframe-10ccce45081199b8.d: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\epi.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\epi_integration.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\run.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\file_storage.rs
+
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\lib.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\epi.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\mod.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\epi_integration.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\run.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\eframe-0.21.2\src\native\file_storage.rs:

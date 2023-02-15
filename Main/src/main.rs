@@ -144,11 +144,14 @@ fn main() {
 
     //EGUI
     let native_options = eframe::NativeOptions::default();
-    eframe::run_native(
+    match eframe::run_native(
         "eframe template",
         native_options,
         Box::new(|cc| Box::new(dxf_janitors::SvgApp::default())),
-    );
+    ){
+        Ok(_) => info!("Started App!"),
+        Err(err) => panic!("Error while starting app: {}", err),
+    };
 
     
     

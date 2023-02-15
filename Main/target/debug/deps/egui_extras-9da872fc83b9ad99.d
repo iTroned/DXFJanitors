@@ -1,0 +1,12 @@
+D:\VSCode\DXFJanitors\Main\target\debug\deps\egui_extras-9da872fc83b9ad99.rmeta: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\image.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\layout.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\sizing.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\strip.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\table.rs
+
+D:\VSCode\DXFJanitors\Main\target\debug\deps\libegui_extras-9da872fc83b9ad99.rlib: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\image.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\layout.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\sizing.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\strip.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\table.rs
+
+D:\VSCode\DXFJanitors\Main\target\debug\deps\egui_extras-9da872fc83b9ad99.d: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\image.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\layout.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\sizing.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\strip.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\table.rs
+
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\lib.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\image.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\layout.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\sizing.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\strip.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\egui_extras-0.21.0\src\table.rs:

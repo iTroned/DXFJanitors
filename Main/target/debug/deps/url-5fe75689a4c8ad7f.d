@@ -1,0 +1,13 @@
+D:\VSCode\DXFJanitors\Main\target\debug\deps\url-5fe75689a4c8ad7f.rmeta: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\host.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\origin.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\parser.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\path_segments.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\slicing.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\quirks.rs
+
+D:\VSCode\DXFJanitors\Main\target\debug\deps\liburl-5fe75689a4c8ad7f.rlib: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\host.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\origin.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\parser.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\path_segments.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\slicing.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\quirks.rs
+
+D:\VSCode\DXFJanitors\Main\target\debug\deps\url-5fe75689a4c8ad7f.d: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\host.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\origin.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\parser.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\path_segments.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\slicing.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\quirks.rs
+
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\lib.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\host.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\origin.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\parser.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\path_segments.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\slicing.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\url-2.3.1\src\quirks.rs:

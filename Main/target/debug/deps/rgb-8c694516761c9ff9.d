@@ -1,0 +1,13 @@
+d:\VSCode\DXFJanitors\Main\target\debug\deps\rgb-8c694516761c9ff9.rmeta: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\array.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\tuple.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\ops.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\pixel.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\rgb.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\rgba.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\alt.rs
+
+d:\VSCode\DXFJanitors\Main\target\debug\deps\rgb-8c694516761c9ff9.d: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\mod.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\array.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\tuple.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\ops.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\pixel.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\rgb.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\rgba.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\alt.rs
+
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\lib.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\mod.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\array.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\convert\tuple.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\ops.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\pixel.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\rgb.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\internal\rgba.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\rgb-0.8.35\src\alt.rs:

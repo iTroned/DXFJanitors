@@ -1,1 +1,1 @@
-D:\VSCode\DXFJanitors\Main\target\debug\dxf_janitors.exe: D:\VSCode\DXFJanitors\Main\src\main.rs
+D:\VSCode\DXFJanitors\Main\target\debug\dxf_janitors.exe: D:\VSCode\DXFJanitors\Main\src\app.rs D:\VSCode\DXFJanitors\Main\src\lib.rs D:\VSCode\DXFJanitors\Main\src\main.rs D:\VSCode\DXFJanitors\Main\test1_dxf_export.svg

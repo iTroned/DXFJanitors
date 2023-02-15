@@ -1,0 +1,12 @@
+D:\VSCode\DXFJanitors\Main\target\debug\deps\thiserror_impl-273e11b682a55e70.dll: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\ast.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\attr.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\expand.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\fmt.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\generics.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\prop.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\valid.rs
+
+D:\VSCode\DXFJanitors\Main\target\debug\deps\thiserror_impl-273e11b682a55e70.d: C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\lib.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\ast.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\attr.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\expand.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\fmt.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\generics.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\prop.rs C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\valid.rs
+
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\lib.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\ast.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\attr.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\expand.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\fmt.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\generics.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\prop.rs:
+C:\Users\sondr\.cargo\registry\src\github.com-1ecc6299db9ec823\thiserror-impl-1.0.38\src\valid.rs:
