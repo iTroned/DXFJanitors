@@ -28,12 +28,12 @@ impl eframe::App for SvgApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         //design the frame
         let my_frame = egui::containers::Frame {
-            inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. }, //margins (affects the color-border)
+            inner_margin: egui::style::Margin { left: 10., right: 0., top: 10., bottom: 10. }, //margins (affects the color-border)
             outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
             rounding: egui::Rounding { nw: 1.0, ne: 1.0, sw: 1.0, se: 1.0 },
             shadow: eframe::epaint::Shadow { extrusion: 1.0, color: Color32::YELLOW },
-            fill: Color32::WHITE, //background fill color, affected by the margin
-            stroke: egui::Stroke::new(2.0, Color32::GOLD),
+            fill: Color32::from_rgb(250,249,246), //background fill color, affected by the margin
+            stroke: egui::Stroke::new(2.0, Color32::BLACK),
         };
         //ui panels
         egui::CentralPanel::default().frame(my_frame).show(ctx, |ui| {
