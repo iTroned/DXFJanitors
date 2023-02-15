@@ -145,7 +145,7 @@ fn main() {
     //EGUI
     let native_options = eframe::NativeOptions::default();
     match eframe::run_native(
-        "eframe template",
+        "dxf janitors",
         native_options,
         Box::new(|cc| Box::new(dxf_janitors::SvgApp::default())),
     ){
