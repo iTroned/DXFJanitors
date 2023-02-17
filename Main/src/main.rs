@@ -500,7 +500,7 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
     // insert polylines into svg paths
 
     //Colors to use when creating layers. Priority from right to left
-    let mut colors = vec!["cyan", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "gold", "darkred", "limegreen", "chocolate", "blueviolet", "lime", "purple", "orange", "yellow", "green", "blue", "red"];
+    let mut colors = vec!["purple(16)","navy(16)","seagreen","darkslategrey","black","darkorchid","indianred","darkolivegreen","forestgreen", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "darkred", "chocolate", "blueviolet", "purple", "orange", "green", "blue", "red"];
     for (name, polylines) in layer_polylines.iter() {
         //Uses the next color for this layer. If none are left use black
         let color = 
