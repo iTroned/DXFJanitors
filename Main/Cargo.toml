@@ -13,6 +13,7 @@ log = "0.4.14"
 env_logger = "0.9.0"
 geo = "0.23.1"
 line_intersection = "0.4.0"
+rfd = "0.11.1"
 egui = "0.21.0"
 egui_extras = {version = "0.21.0", features = ["svg"]}
 eframe = { version = "0.21.0", default-features = false, features = [

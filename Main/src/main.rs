@@ -3,6 +3,10 @@
 
 const NUM_SEGMENTS: usize = 16;
 
+
+use eframe::{egui, glow::{FILL, BLUE}};
+use egui_extras::image::FitTo;
+use egui::Color32;
 use clap::Parser;
 
 use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point};
@@ -131,7 +135,7 @@ fn main() {
             ,
     ); 
     
-    let input_path = "test.dxf".to_string();
+    /*let input_path = "test.dxf".to_string();
 
     let output_path = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.dxf";
     let output_path_svg = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
@@ -141,13 +145,15 @@ fn main() {
     dxf::Drawing::save_file(&in_file, "test_export.dxf").map_err(|err| error!("Error while saving dxf: {}", err)).ok();
     let layers = extract_layers(&in_file);
     connect_layers(&layers, dxf_file, &output_path, &output_path_svg); 
+*/
 
     //EGUI
     let native_options = eframe::NativeOptions::default();
+    let app = SvgApp::default();
     match eframe::run_native(
         "dxf janitors",
         native_options,
-        Box::new(|cc| Box::new(dxf_janitors::SvgApp::default())),
+        Box::new(|_cc| Box::new(app)),
     ){
         Ok(_) => info!("Started App!"),
         Err(err) => panic!("Error while starting app: {}", err),
@@ -155,6 +161,13 @@ fn main() {
 
     
     
+}
+fn convert_dxf_to_svg(input_path: String){
+    let in_file = dxf::Drawing::load_file(input_path.clone()).expect("expexted valid input file");
+    let mut dxf_file = dxf::Drawing::new();
+    let layers = extract_layers(&in_file);
+    let output_path = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+    connect_layers(&layers, dxf_file, &output_path); 
 }
 fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     let mut layers = HashMap::<String, Layer>::default();
@@ -213,119 +226,9 @@ fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     layers
 }
 
-fn make_polyline_circle(num_segments: usize, c: &dxfe::Circle) -> PolyLine {
-    _make_polyline_ellipse(
-        num_segments,
-        c.center.x,
-        c.center.y,
-        c.radius,
-        0.0,
-        1.0,
-        c.normal.z,
-        0.0,
-        2.0 * PI,
-    )
-}
 
-fn make_polyline_arc(num_segments: usize, a: &dxfe::Arc) -> PolyLine {
-    _make_polyline_ellipse(
-        num_segments,
-        a.center.x,
-        a.center.y,
-        a.radius,
-        0.0,
-        1.0,
-        a.normal.z,
-        a.start_angle * PI / 180.0,
-        a.end_angle * PI / 180.0,
-    )
-}
 
-fn make_polyline_ellipse(num_segments: usize, e: &dxfe::Ellipse) -> PolyLine {
-    _make_polyline_ellipse(
-        num_segments,
-        e.center.x,
-        e.center.y,
-        e.major_axis.x,
-        e.major_axis.y,
-        e.minor_axis_ratio,
-        e.normal.z,
-        e.start_parameter,
-        e.end_parameter,
-    )
-}
-
-/// Can be used to create, circles, arcs and ellipses.
-///
-/// This works from the fact that circle, arcs, and ellipses are all the special cases of the
-/// same generic thing, the generic ellipse.
-///
-/// An ellipse is defined by it's major and minor axies, see wikipedia.
-/// Given a major axis starting at (cx, cy) and ending at (mx, my), the minor axis
-/// is known to be 90 degrees to this, and be scaled by a `ratio`. We use this fact
-/// and together with some basic trigonometry to compute the ellipse.
-fn _make_polyline_ellipse(
-    num_segments: usize,
-    cx: f64,
-    cy: f64,
-    mx: f64,
-    my: f64,
-    ratio: f64,
-    normal_z: f64,
-    mut a1: f64,
-    a2: f64,
-) -> PolyLine {
-    // this ensures that `da` has correct magnitude and sign ... subtle.
-    if a1 > a2 {
-        a1 -= 2.0 * PI;
-    }
-
-    assert!(num_segments > 0);
-    assert!(a1 != a2);
-    let da = (a2 - a1) / (num_segments as f64);
-
-    let rx = (mx.powi(2) + my.powi(2)).sqrt();
-    let ry = ratio * rx;
-
-    assert!(rx > 0.0);
-    // used to rotate the ellipse so that it aligns with major axis vector.
-    let cos_rot = mx / rx;
-    let sin_rot = my / rx;
-
-    let mut x_values = Vec::<f64>::default();
-    let mut y_values = Vec::<f64>::default();
-
-    for n in 0..(num_segments + 1) {
-        let a = a1 + (n as f64) * da;
-
-        // ellipse allgined with x-axis as major axis
-        let xa = rx * a.cos();
-        let ya = ry * a.sin();
-
-        // rotation to align with the real major axis, note sign change when normal_z changes
-        let rxa = xa * cos_rot - normal_z.signum() * ya * sin_rot;
-        let rya = xa * sin_rot + normal_z.signum() * ya * cos_rot;
-
-        x_values.push(cx + rxa);
-        y_values.push(cy + rya);
-    }
-
-    let is_closed = ((a2 - a1).abs() - 2.0 * PI).abs() <= 1e-10;
-
-    // because when closed we do not want to include the final point, that would be stuttering.
-    if is_closed {
-        x_values.pop();
-        y_values.pop();
-    }
-
-    PolyLine {
-        x_values,
-        y_values,
-        is_closed,
-    }
-}
-
-fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, output_path: &String, output_path_svg: &String){
+fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, output_path: &String){
     dxf_file.clear();
     dxf_file.normalize();
     
@@ -350,13 +253,17 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
         .flat_map(|e| e.y_values.clone())
         .collect();
 
+//finding max and min for centralizing
     let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
     let min_x = x_values.iter().copied().min_by(cmp).unwrap();
-    let max_x = x_values.iter().copied().max_by(cmp).unwrap();
+    let _max_x = x_values.iter().copied().max_by(cmp).unwrap();
     let min_y = y_values.iter().copied().min_by(cmp).unwrap();
-    let max_y = y_values.iter().copied().max_by(cmp).unwrap();
+    let _max_y = y_values.iter().copied().max_by(cmp).unwrap();
 
-    for(layer_name, polylines) in layer_polylines.iter(){
+    for (_name, layer) in layers.iter() {
+        add_layer_to_file(&mut dxf_file, layer, &min_x, &min_y);
+    }
+    /*for(layer_name, polylines) in layer_polylines.iter(){
         println!("Starting layer {}", layer_name);
         let mut new_layer = dxf::tables::Layer::default();
         new_layer.name = layer_name.clone();
@@ -497,37 +404,8 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
             entity.common = common;
             dxf_file.add_entity(entity);
         }
-    }
-    fn add_closed_polylines(){
-        
-    }
-    fn add_layer_to_file(dxf_file: &mut dxf::Drawing, layer: &Layer, min_x: &f64, min_y: &f64){
-        for polyline in layer.into_polylines(){
-            add_polyline_to_file(dxf_file, &polyline, min_x, min_y, &layer.name);
-        }
-    }
-    fn add_polyline_to_file(dxf_file: &mut dxf::Drawing, polyline: &PolyLine, min_x: &f64, min_y: &f64, layer_name: &String){
-        let mut new_polyline = dxf::entities::LwPolyline::default();
-
-        let x_values = polyline.x_values.iter();
-        let y_values = polyline.y_values.iter();
-        let xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - min_y));
-        let mut counter = 0;
-        for(x, y) in xy_values{
-            let mut vertex = dxf::LwPolylineVertex::default();
-            vertex.x = x;
-            vertex.y = y;
-            vertex.id = counter;
-            counter += 1;
-            new_polyline.vertices.push(vertex);
-        }
-        new_polyline.set_is_closed(polyline.is_closed);
-        let mut entity = dxf::entities::Entity::new(dxf::entities::EntityType::LwPolyline(new_polyline));
-        let mut common = dxf::entities::EntityCommon::default();
-        common.layer = layer_name.clone();
-        entity.common = common;
-        dxf_file.add_entity(entity);
-    }
+    }*/
+    
 
     for layer in dxf_file.layers(){
         println!("Contains layer: {}", &layer.name);
@@ -539,7 +417,40 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
     println!("Entities: {}", counter);
     dxf::Drawing::save_file(&dxf_file, output_path).map_err(|err| error!("Error while saving dxf: {}", err)).ok();
     let layers = extract_layers(&dxf_file);
-    write_layers_to_svg(&layers, output_path_svg.clone());
+    write_layers_to_svg(&layers, output_path.clone());
+}
+
+
+fn add_layer_to_file(dxf_file: &mut dxf::Drawing, layer: &Layer, min_x: &f64, min_y: &f64){
+    println!("Starting layer {}", layer.name);
+    let mut new_layer = dxf::tables::Layer::default();
+    new_layer.name = layer.name.clone();
+    dxf_file.add_layer(new_layer);
+    for polyline in layer.into_polylines(){
+        add_polyline_to_file(dxf_file, &polyline, min_x, min_y, &layer.name);
+    }
+}
+fn add_polyline_to_file(dxf_file: &mut dxf::Drawing, polyline: &PolyLine, min_x: &f64, min_y: &f64, layer_name: &String){
+    let mut new_polyline = dxf::entities::LwPolyline::default();
+
+    let x_values = polyline.x_values.iter();
+    let y_values = polyline.y_values.iter();
+    let xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - min_y));
+    let mut counter = 0;
+    for(x, y) in xy_values{
+        let mut vertex = dxf::LwPolylineVertex::default();
+        vertex.x = x;
+        vertex.y = y;
+        vertex.id = counter;
+        counter += 1;
+        new_polyline.vertices.push(vertex);
+    }
+    new_polyline.set_is_closed(polyline.is_closed);
+    let mut entity = dxf::entities::Entity::new(dxf::entities::EntityType::LwPolyline(new_polyline));
+    let mut common = dxf::entities::EntityCommon::default();
+    common.layer = layer_name.clone();
+    entity.common = common;
+    dxf_file.add_entity(entity);
 }
 fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
     //Colors to use when creating svg.. The last one is used first
@@ -669,6 +580,7 @@ fn find_closest_point(point: SelfPoint, vector: &Vec<BuddyPoint>) -> &BuddyPoint
     }
     closest_point
 }
+
 //angle at the point two linear functions intercept
 //angle for two linear lines: angle = tan^-1 (|m2-m1|/(1+m1m2)) Where m1 is the slope of function A and m2 is the slope of function B
 fn angle_between_lines(m1: f64, m2: f64) -> f64{
@@ -691,7 +603,7 @@ fn angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
 
 //B is the vertex where the angle is calculated
 //function creates two vectors and uses the function angle vectors to return the angle
-fn angle_three_poiints(A: (f64, f64), B: (f64, f64), C: (f64, f64)) -> f64{
+fn angle_three_points(A: (f64, f64), B: (f64, f64), C: (f64, f64)) -> f64{
     //creating vectors: AB and BC
     let AB = (B.0 - A.0, B.1 - A.1); //vector AB = (B1 - A1, B2 - A2)
     let BC = (C.0 - B.0, C.1 - B.1);
@@ -699,3 +611,201 @@ fn angle_three_poiints(A: (f64, f64), B: (f64, f64), C: (f64, f64)) -> f64{
     let angle = angle_vectors(AB, BC);
     angle //return angle
 }
+fn make_polyline_circle(num_segments: usize, c: &dxfe::Circle) -> PolyLine {
+    _make_polyline_ellipse(
+        num_segments,
+        c.center.x,
+        c.center.y,
+        c.radius,
+        0.0,
+        1.0,
+        c.normal.z,
+        0.0,
+        2.0 * PI,
+    )
+}
+
+fn make_polyline_arc(num_segments: usize, a: &dxfe::Arc) -> PolyLine {
+    _make_polyline_ellipse(
+        num_segments,
+        a.center.x,
+        a.center.y,
+        a.radius,
+        0.0,
+        1.0,
+        a.normal.z,
+        a.start_angle * PI / 180.0,
+        a.end_angle * PI / 180.0,
+    )
+}
+
+fn make_polyline_ellipse(num_segments: usize, e: &dxfe::Ellipse) -> PolyLine {
+    _make_polyline_ellipse(
+        num_segments,
+        e.center.x,
+        e.center.y,
+        e.major_axis.x,
+        e.major_axis.y,
+        e.minor_axis_ratio,
+        e.normal.z,
+        e.start_parameter,
+        e.end_parameter,
+    )
+}
+
+/// Can be used to create, circles, arcs and ellipses.
+///
+/// This works from the fact that circle, arcs, and ellipses are all the special cases of the
+/// same generic thing, the generic ellipse.
+///
+/// An ellipse is defined by it's major and minor axies, see wikipedia.
+/// Given a major axis starting at (cx, cy) and ending at (mx, my), the minor axis
+/// is known to be 90 degrees to this, and be scaled by a `ratio`. We use this fact
+/// and together with some basic trigonometry to compute the ellipse.
+fn _make_polyline_ellipse(
+    num_segments: usize,
+    cx: f64,
+    cy: f64,
+    mx: f64,
+    my: f64,
+    ratio: f64,
+    normal_z: f64,
+    mut a1: f64,
+    a2: f64,
+) -> PolyLine {
+    // this ensures that `da` has correct magnitude and sign ... subtle.
+    if a1 > a2 {
+        a1 -= 2.0 * PI;
+    }
+
+    assert!(num_segments > 0);
+    assert!(a1 != a2);
+    let da = (a2 - a1) / (num_segments as f64);
+
+    let rx = (mx.powi(2) + my.powi(2)).sqrt();
+    let ry = ratio * rx;
+
+    assert!(rx > 0.0);
+    // used to rotate the ellipse so that it aligns with major axis vector.
+    let cos_rot = mx / rx;
+    let sin_rot = my / rx;
+
+    let mut x_values = Vec::<f64>::default();
+    let mut y_values = Vec::<f64>::default();
+
+    for n in 0..(num_segments + 1) {
+        let a = a1 + (n as f64) * da;
+
+        // ellipse allgined with x-axis as major axis
+        let xa = rx * a.cos();
+        let ya = ry * a.sin();
+
+        // rotation to align with the real major axis, note sign change when normal_z changes
+        let rxa = xa * cos_rot - normal_z.signum() * ya * sin_rot;
+        let rya = xa * sin_rot + normal_z.signum() * ya * cos_rot;
+
+        x_values.push(cx + rxa);
+        y_values.push(cy + rya);
+    }
+
+    let is_closed = ((a2 - a1).abs() - 2.0 * PI).abs() <= 1e-10;
+
+    // because when closed we do not want to include the final point, that would be stuttering.
+    if is_closed {
+        x_values.pop();
+        y_values.pop();
+    }
+
+    PolyLine {
+        x_values,
+        y_values,
+        is_closed,
+    }
+}
+
+pub struct SvgApp {
+    svg_image: egui_extras::RetainedImage,
+    picked_path: Option<String>,
+    look_path: String,
+}
+
+impl Default for SvgApp {
+    fn default() -> Self {
+        Self {
+            svg_image: egui_extras::RetainedImage::from_svg_bytes_with_size(
+                "../tmp_file.svg", //path of svg file to display
+                include_bytes!("../tmp_file.svg"), 
+                FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+            )
+            .unwrap(),
+            picked_path: Some("".to_string()),
+            look_path: "".to_string(),
+
+        }
+    }
+    
+}
+
+
+
+//design of the app, look at documenation for inspiration
+impl eframe::App for SvgApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        //design the frame
+        let my_frame = egui::containers::Frame {
+            inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. }, //margins (affects the color-border)
+            outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
+            rounding: egui::Rounding { nw: 1.0, ne: 1.0, sw: 1.0, se: 1.0 },
+            shadow: eframe::epaint::Shadow { extrusion: 1.0, color: Color32::YELLOW },
+            fill: Color32::WHITE, //background fill color, affected by the margin
+            stroke: egui::Stroke::new(2.0, Color32::GOLD),
+        };
+        //ui panelsca
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.heading("SVG example");
+            ui.label("The SVG is rasterized and displayed as a texture.");
+
+            ui.separator();
+            
+
+            let mut size = ui.available_size();
+            size.x = size.x / 2.;
+            size.y = size.y / 2.;
+            
+            self.svg_image.show_size(ui, size);
+            ui.label("Upload a DXF file!");
+
+            if ui.button("Open file…").clicked() {
+                if let Some(path) = rfd::FileDialog::new().pick_file() {
+                    self.picked_path = Some(path.display().to_string());
+                }
+            }
+            
+            if let Some(picked_path) = &self.picked_path {
+                ui.horizontal(|ui| {
+                    ui.label("Picked file:");
+                    ui.monospace(picked_path);
+                });
+            }
+            if ui.button("Load file!").clicked() {
+                let mut path = "".to_string();
+                match self.picked_path.clone(){
+                    None => path = path,
+                    Some(x) => path = x.clone(),
+                };
+                self.look_path = path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+                convert_dxf_to_svg(path);
+            }
+            if ui.button("Set!").clicked() {
+                self.svg_image =  egui_extras::RetainedImage::from_svg_bytes_with_size(
+                    self.look_path.clone(), //path of svg file to display
+                    self.look_path.as_bytes(), 
+                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                )
+                .unwrap();
+            ctx.request_repaint();
+            }
+        });
+
+    }
+} 
