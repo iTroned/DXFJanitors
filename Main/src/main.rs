@@ -10,45 +10,49 @@ use egui::Color32;
 use clap::Parser;
 
 use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point};
-use std::{collections::HashMap, f64::consts::PI};
+use std::{collections::HashMap, f64::consts::PI, hash::Hash};
 use svg::node::element as svg_element;
 use dxfe::EntityType as ET;
 use log::{error, info, warn};
 /*use line_intersection::{LineInterval, LineRelation};
 use geo::{Coordinate, Line as GeoLine, Point as GeoPoint};*/
-#[derive(Clone, Default)]
+#[derive(Clone, Default, PartialEq)]
 pub struct PolyLine {
     is_closed: bool,
     x_values: Vec<f64>,
     y_values: Vec<f64>,
 }
 
-#[derive(Clone, Copy)]
-pub struct SelfPoint {
+#[derive(Clone, Copy, PartialEq)]
+pub struct CustomPoint {
     x: f64,
     y: f64,
 }
 
-impl SelfPoint {
+impl CustomPoint {
     fn new(x: f64, y: f64) -> Self {
         Self {x, y}
     }
+    fn clone(&self) -> Self { 
+        *self
+    }
+}
+#[derive(Clone, Copy, PartialEq)]
+pub struct PointWithNeighbour {
+    point: CustomPoint,
+    neighbour: CustomPoint
+}
+impl PointWithNeighbour {
+    fn new(point: CustomPoint, neighbour: CustomPoint) -> Self {
+        Self {point, neighbour}
+    }
     fn clone(&self) -> Self {
         *self
     }
 }
-#[derive(Clone, Copy)]
-pub struct BuddyPoint {
-    x: f64,
-    y: f64,
-    buddy: SelfPoint
-}
-impl BuddyPoint {
-    fn new(x: f64, y: f64, buddy: SelfPoint) -> Self {
-        Self {x, y, buddy}
-    }
-    fn clone(&self) -> Self {
-        *self
+impl PolyLine {
+    fn new(is_closed: bool, x_values: Vec<f64>, y_values: Vec<f64>) -> Self {
+        Self {is_closed, x_values, y_values}
     }
 }
 impl From<dxfe::Line> for PolyLine {
@@ -142,7 +146,7 @@ fn main() {
 
     let in_file = dxf::Drawing::load_file(input_path).expect("expexted valid input file");
     let mut dxf_file = dxf::Drawing::new();
-    dxf::Drawing::save_file(&in_file, "test_export.dxf").map_err(|err| error!("Error while saving dxf: {}", err)).ok();
+    
     let layers = extract_layers(&in_file);
     connect_layers(&layers, dxf_file, &output_path, &output_path_svg); 
 */
@@ -166,8 +170,55 @@ fn convert_dxf_to_svg(input_path: String){
     let in_file = dxf::Drawing::load_file(input_path.clone()).expect("expexted valid input file");
     let mut dxf_file = dxf::Drawing::new();
     let layers = extract_layers(&in_file);
-    let output_path = input_path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+    let output_path = input_path.clone().replace('.', "_").replace(' ', "_").replace("\\", "/") + "_export.svg";
+    println!("Path: {}", output_path);
     connect_layers(&layers, dxf_file, &output_path); 
+}
+fn convert_specific_layers(input_path: String, layer_names: Vec<String>){
+    let in_file = dxf::Drawing::load_file(input_path.clone()).expect("expexted valid input file");
+    let mut dxf_file = dxf::Drawing::new();
+    let layers = extract_layers(&in_file);
+    let output_path = input_path.clone().replace('.', "_").replace(' ', "_").replace("\\", "/") + "_export.svg";
+
+    
+    let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+    for (name, layer) in layers.iter() {
+        layer_polylines.insert(name.clone(), layer.into_polylines());
+    }
+
+    let all_polylines: Vec<PolyLine> = layer_polylines
+        .values()
+        .flat_map(|v| v.iter().cloned())
+        .collect();
+
+    // compute stats for polylines
+    let x_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.x_values.clone())
+        .collect();
+
+    let y_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.y_values.clone())
+        .collect();
+
+//finding max and min for centralizing
+    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
+    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
+    let _max_x = x_values.iter().copied().max_by(cmp).unwrap();
+    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
+    let _max_y = y_values.iter().copied().max_by(cmp).unwrap();
+
+    for (name, layer) in layers.iter(){
+        if layer_names.contains(name){
+            add_layer_to_file(&mut dxf_file, layer, &min_x, &min_y)
+        }
+    }
+
+    dxf::Drawing::save_file(&dxf_file, output_path.clone()).map_err(|err| error!("Error while saving dxf: {}", err)).ok();
+    let layers = extract_layers(&dxf_file);
+    write_layers_to_svg(&layers, output_path.clone());
+
 }
 fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     let mut layers = HashMap::<String, Layer>::default();
@@ -263,148 +314,6 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing, o
     for (_name, layer) in layers.iter() {
         add_layer_to_file(&mut dxf_file, layer, &min_x, &min_y);
     }
-    /*for(layer_name, polylines) in layer_polylines.iter(){
-        println!("Starting layer {}", layer_name);
-        let mut new_layer = dxf::tables::Layer::default();
-        new_layer.name = layer_name.clone();
-        dxf_file.add_layer(new_layer);
-        let mut xy_ends: Vec<BuddyPoint> = Vec::new();
-        //let mut end_points = HashMap::<PolyLine, Vec<BuddyPoint>>::default();
-        //Adds all the open vertexes to a map
-        for polyline in polylines.iter(){
-            if polyline.is_closed{
-                continue;
-            }
-            
-            let len: i32 = polyline.x_values.len().try_into().unwrap();
-            //println!("Length: {}", len);
-            let mut x_val = polyline.x_values.clone();
-            let mut y_val = polyline.y_values.clone();
-            if len == 2 {
-                xy_ends.push(BuddyPoint::new(match polyline.x_values.first() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                }, match polyline.y_values.first() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                }, SelfPoint::new(match polyline.x_values.last() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                }, match polyline.y_values.last() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                })));
-                xy_ends.push(BuddyPoint::new(match polyline.x_values.last() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                }, match polyline.y_values.last() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                }, SelfPoint::new(match polyline.x_values.first() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                }, match polyline.y_values.first() {
-                    None => 0.0,
-                    Some(x) => x.clone(),
-                })));
-                
-            }
-            else if len == 3 {
-                let x1 = match x_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                let x2 = match x_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                let x3 = match x_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                let y1 = match y_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                let y2 = match y_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                let y3 = match y_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                let mid_point = SelfPoint::new(x2, y2);
-                xy_ends.push(BuddyPoint::new(x1, y1, mid_point.clone()));
-                xy_ends.push(BuddyPoint::new(x3, y3, mid_point.clone()));
-            }
-            else{
-                //Adds the last coordinates to the vector
-                xy_ends.push(BuddyPoint::new(x_val.pop().unwrap(), y_val.pop().unwrap(), SelfPoint::new(x_val.pop().unwrap(), y_val.pop().unwrap())));
-                let mut i = len - 4;
-                while i > 0 {
-                    x_val.pop();
-                    y_val.pop();
-                    i -= 1;
-                }
-                let x1 = match x_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                let y1 = match y_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                };
-                xy_ends.push(BuddyPoint::new(match x_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                }, match y_val.pop(){
-                    None => 0.0,
-                    Some(x) => x,
-                }, SelfPoint::new(x1, y1)));
-            }
-            
-
-            
-        }
-        for polyline in polylines.iter(){
-            /*if polyline.is_closed{
-                continue;
-            }*/
-            let x_values = polyline.x_values.iter();
-            let y_values = polyline.y_values.iter();
-            let xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - min_y));
-            
-            let mut new_polyline = dxf::entities::LwPolyline::default();
-            let mut counter = 0;
-            for(x, y) in xy_values{
-                let mut vertex = dxf::LwPolylineVertex::default();
-                if counter == 0 && !polyline.is_closed {
-                    
-                    /*let closest_point = find_closest_point(SelfPoint::new(x, y), &xy_ends);
-                    let connect_point = connect_points(SelfPoint::new(closest_point.x, closest_point.y), SelfPoint::new(closest_point.buddy.x, closest_point.buddy.y), SelfPoint::new(x, y), SelfPoint::new(x, y));
-                    vertex.x = connect_point.x;
-                    vertex.y = connect_point.y;*/
-                    vertex.x = x;
-                    vertex.y = y;
-                }
-                else{
-                    vertex.x = x;
-                    vertex.y = y;
-                }
-                
-                vertex.id = counter;
-                counter += 1;
-                new_polyline.vertices.push(vertex);
-            }
-            new_polyline.set_is_closed(polyline.is_closed);
-            let mut entity = dxf::entities::Entity::new(dxf::entities::EntityType::LwPolyline(new_polyline));
-            let mut common = dxf::entities::EntityCommon::default();
-            common.layer = layer_name.clone();
-            entity.common = common;
-            dxf_file.add_entity(entity);
-        }
-    }*/
     
 
     for layer in dxf_file.layers(){
@@ -551,7 +460,123 @@ fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
     };
 }
 
-fn connect_points(a1: SelfPoint, a2: SelfPoint, b1: SelfPoint, b2: SelfPoint) -> SelfPoint{
+fn extend_closest_lines(in_map: &HashMap<String, Vec<PolyLine>>) -> HashMap<String, Vec<PolyLine>>{
+    let mut out_map = HashMap::<String, Vec<PolyLine>>::default();
+    for (name, in_polylines) in in_map{
+        let mut out_polylines = Vec::<PolyLine>::default();
+        let mut xy_ends: Vec<PointWithNeighbour> = Vec::new();
+        let mut buddy_map = HashMap::<PointWithNeighbour, PolyLine>::default();
+        for polyline in in_polylines {
+            if polyline.is_closed {
+                out_polylines.push(polyline.clone());
+            }
+
+            let len: i32 = polyline.x_values.len().try_into().unwrap();
+            let mut x_val = polyline.x_values.clone();
+            let mut y_val = polyline.y_values.clone();
+            if len == 2 {
+                let point = PointWithNeighbour::new(CustomPoint::new(match polyline.x_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }), CustomPoint::new(match polyline.x_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }));
+                //buddy_map.insert(point, polyline);
+                xy_ends.push(point);
+                let point_2 = PointWithNeighbour::new(CustomPoint::new(match polyline.x_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.last() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }), CustomPoint::new(match polyline.x_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }, match polyline.y_values.first() {
+                    None => 0.0,
+                    Some(x) => x.clone(),
+                }));
+                xy_ends.push(point_2);
+            }
+            else if len == 3 {
+                let x1 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let x2 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let x3 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y1 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y2 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y3 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let mid_point = CustomPoint::new(x2, y2);
+                xy_ends.push(PointWithNeighbour::new(CustomPoint::new(x1, y1), mid_point.clone()));
+                xy_ends.push(PointWithNeighbour::new(CustomPoint::new(x3, y3), mid_point.clone()));
+            }
+            else{
+                //Adds the last coordinates to the vector
+                xy_ends.push(PointWithNeighbour::new(CustomPoint::new(x_val.pop().unwrap(), y_val.pop().unwrap()), CustomPoint::new(x_val.pop().unwrap(), y_val.pop().unwrap())));
+                let mut i = len - 4;
+                while i > 0 {
+                    x_val.pop();
+                    y_val.pop();
+                    i -= 1;
+                }
+                let x1 = match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                let y1 = match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                };
+                xy_ends.push(PointWithNeighbour::new(CustomPoint::new(match x_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                }, match y_val.pop(){
+                    None => 0.0,
+                    Some(x) => x,
+                }), CustomPoint::new(x1, y1)));
+            }
+
+        }
+        for point in xy_ends.clone(){
+            let closest = find_closest_point(point.point, &xy_ends);
+            let closest_to_closest = find_closest_point(closest.point, &xy_ends);
+            if !point.eq(closest_to_closest) {
+                //out_polylines.push
+                continue;
+            }
+            let common_point = connect_points(&point.point, &point.neighbour, &closest.point, &closest.neighbour);
+            //out_polylines.push(PolyLine::new(false, ));
+        }
+        out_map.insert(name.clone(), out_polylines);
+    }
+    out_map
+}
+
+fn connect_points(a1: &CustomPoint, a2: &CustomPoint, b1: &CustomPoint, b2: &CustomPoint) -> CustomPoint{
     //y = mx + b
     let a_m = a2.y - a1.y / a2.x - a1.x;
     let a_b = a1.y - a_m * a1.x;
@@ -562,14 +587,14 @@ fn connect_points(a1: SelfPoint, a2: SelfPoint, b1: SelfPoint, b2: SelfPoint) ->
 
     let x = (b_b - a_b) / (a_m - b_m);
     let y = a_m * x + a_b;
-    let new_point = SelfPoint::new(x, y);
+    let new_point = CustomPoint::new(x, y);
     new_point
 }
-fn find_closest_point(point: SelfPoint, vector: &Vec<BuddyPoint>) -> &BuddyPoint{
+fn find_closest_point(point: CustomPoint, vector: &Vec<PointWithNeighbour>) -> &PointWithNeighbour{
     let mut closest_point = vector.first().to_owned().unwrap();
-    let mut closest_distance = f64::sqrt((closest_point.x - point.x) * (closest_point.x - point.x) + (closest_point.y - point.y) * (closest_point.y - point.y));
+    let mut closest_distance = f64::sqrt((closest_point.point.x - point.x) * (closest_point.point.x - point.x) + (closest_point.point.y - point.y) * (closest_point.point.y - point.y));
     for v_point in vector{
-        let new_distance = f64::sqrt((v_point.x - point.x) * (v_point.x - point.x) + (v_point.y - point.y) * (v_point.y - point.y));
+        let new_distance = f64::sqrt((v_point.point.x - point.x) * (v_point.point.x - point.x) + (v_point.point.y - point.y) * (v_point.point.y - point.y));
         if new_distance == 0. {
             continue;
         }
@@ -793,17 +818,18 @@ impl eframe::App for SvgApp {
                     None => path = path,
                     Some(x) => path = x.clone(),
                 };
-                self.look_path = path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+                self.look_path = path.clone().replace('.', "_").replace(' ', "_").replace("\\", "/") + "_export.svg";
                 convert_dxf_to_svg(path);
             }
             if ui.button("Set!").clicked() {
+                ctx.request_repaint();
+                println!("Path: {}", self.look_path.clone());
                 self.svg_image =  egui_extras::RetainedImage::from_svg_bytes_with_size(
                     self.look_path.clone(), //path of svg file to display
                     self.look_path.as_bytes(), 
                     FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                 )
                 .unwrap();
-            ctx.request_repaint();
             }
         });
 
