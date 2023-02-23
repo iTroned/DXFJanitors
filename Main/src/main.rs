@@ -325,7 +325,7 @@ fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing) -
     }
     println!("Entities: {}", counter);
     //dxf::Drawing::save_file(&dxf_file, output_path).map_err(|err| error!("Error while saving dxf: {}", err)).ok();
-    let layers = extract_layers(&dxf_file);
+    //let layers = extract_layers(&dxf_file);
     //write_layers_to_svg(&layers, output_path.clone());
     dxf_file
 }
@@ -780,7 +780,7 @@ impl Default for SvgApp {
 impl eframe::App for SvgApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         //design the frame
-        let my_frame = egui::containers::Frame {
+        let _my_frame = egui::containers::Frame {
             inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. }, //margins (affects the color-border)
             outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
             rounding: egui::Rounding { nw: 1.0, ne: 1.0, sw: 1.0, se: 1.0 },
