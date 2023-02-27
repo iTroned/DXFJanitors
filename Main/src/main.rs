@@ -166,59 +166,23 @@ fn main() {
     
     
 }
-fn alter_dxf(in_file: &Drawing) -> Drawing{
+/*fn alter_dxf(in_file: &Drawing) -> Drawing{
     let mut out_file = dxf::Drawing::new();
     let layers = extract_layers(&in_file);
     //let output_path = input_path.clone().replace('.', "_").replace(' ', "_").replace("\\", "/") + "_export.svg";
     //println!("Path: {}", output_path);
     out_file = connect_layers(&layers, out_file); 
     out_file
+}*/
+fn convert_specific_layers(layers: &HashMap<String, Vec<PolyLine>>, file: &Drawing, layer_names: &Vec<String>, min_x: &f64, min_y: &f64) -> Drawing{
+    let mut out_file = Drawing::new();
+    for name in layer_names {
+        add_layer_to_file(&mut out_file, &layers.get(name).unwrap(), &name, min_x, min_y)
+    }
+    out_file
 }
-fn convert_specific_layers(input_path: String, layer_names: Vec<String>){
-    let in_file = dxf::Drawing::load_file(input_path.clone()).expect("expexted valid input file");
-    let mut dxf_file = dxf::Drawing::new();
-    let layers = extract_layers(&in_file);
-    let output_path = input_path.clone().replace('.', "_").replace(' ', "_").replace("\\", "/") + "_export.svg";
-
-    
-    let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
-    for (name, layer) in layers.iter() {
-        layer_polylines.insert(name.clone(), layer.into_polylines());
-    }
-
-    let all_polylines: Vec<PolyLine> = layer_polylines
-        .values()
-        .flat_map(|v| v.iter().cloned())
-        .collect();
-
-    // compute stats for polylines
-    let x_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.x_values.clone())
-        .collect();
-
-    let y_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.y_values.clone())
-        .collect();
-
-//finding max and min for centralizing
-    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
-    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
-    let _max_x = x_values.iter().copied().max_by(cmp).unwrap();
-    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
-    let _max_y = y_values.iter().copied().max_by(cmp).unwrap();
-
-    for (name, layer) in layers.iter(){
-        if layer_names.contains(name){
-            add_layer_to_file(&mut dxf_file, layer, &min_x, &min_y)
-        }
-    }
-
-    dxf::Drawing::save_file(&dxf_file, output_path.clone()).map_err(|err| error!("Error while saving dxf: {}", err)).ok();
-    let layers = extract_layers(&dxf_file);
-    write_layers_to_svg(&layers, output_path.clone());
-
+fn connect_layers(layers: &HashMap<String, Vec<PolyLine>>, file: &Drawing, min_x: &f64, min_y: &f64) -> Drawing{
+    convert_specific_layers(layers, file, &layers.keys().cloned().collect(), min_x, min_y)
 }
 fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     let mut layers = HashMap::<String, Layer>::default();
@@ -279,65 +243,13 @@ fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
 
 
 
-fn connect_layers(layers: &HashMap<String, Layer>, mut dxf_file: dxf::Drawing) -> Drawing{
-    dxf_file.clear();
-    dxf_file.normalize();
-    
-    let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
-    for (name, layer) in layers.iter() {
-        layer_polylines.insert(name.clone(), layer.into_polylines());
-    }
-
-    let all_polylines: Vec<PolyLine> = layer_polylines
-        .values()
-        .flat_map(|v| v.iter().cloned())
-        .collect();
-
-    // compute stats for polylines
-    let x_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.x_values.clone())
-        .collect();
-
-    let y_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.y_values.clone())
-        .collect();
-
-//finding max and min for centralizing
-    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
-    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
-    let _max_x = x_values.iter().copied().max_by(cmp).unwrap();
-    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
-    let _max_y = y_values.iter().copied().max_by(cmp).unwrap();
-
-    for (_name, layer) in layers.iter() {
-        add_layer_to_file(&mut dxf_file, layer, &min_x, &min_y);
-    }
-    
-
-    for layer in dxf_file.layers(){
-        println!("Contains layer: {}", &layer.name);
-    }
-    let mut counter = 0;
-    for _entity in dxf_file.entities(){
-        counter += 1;
-    }
-    println!("Entities: {}", counter);
-    //dxf::Drawing::save_file(&dxf_file, output_path).map_err(|err| error!("Error while saving dxf: {}", err)).ok();
-    //let layers = extract_layers(&dxf_file);
-    //write_layers_to_svg(&layers, output_path.clone());
-    dxf_file
-}
-
-
-fn add_layer_to_file(dxf_file: &mut dxf::Drawing, layer: &Layer, min_x: &f64, min_y: &f64){
-    println!("Starting layer {}", layer.name);
+fn add_layer_to_file(dxf_file: &mut dxf::Drawing, layer: &Vec<PolyLine>, layer_name: &String, min_x: &f64, min_y: &f64){
+    //println!("Starting layer {}", layer.name);
     let mut new_layer = dxf::tables::Layer::default();
-    new_layer.name = layer.name.clone();
+    new_layer.name = layer_name.clone();
     dxf_file.add_layer(new_layer);
-    for polyline in layer.into_polylines(){
-        add_polyline_to_file(dxf_file, &polyline, min_x, min_y, &layer.name);
+    for polyline in layer{
+        add_polyline_to_file(dxf_file, &polyline, min_x, min_y, &layer_name);
     }
 }
 fn add_polyline_to_file(dxf_file: &mut dxf::Drawing, polyline: &PolyLine, min_x: &f64, min_y: &f64, layer_name: &String){
@@ -361,104 +273,6 @@ fn add_polyline_to_file(dxf_file: &mut dxf::Drawing, polyline: &PolyLine, min_x:
     common.layer = layer_name.clone();
     entity.common = common;
     dxf_file.add_entity(entity);
-}
-fn write_layers_to_svg(layers: &HashMap<String, Layer>, output_path: String) {
-    //Colors to use when creating svg.. The last one is used first
-    //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
-    let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
-    //let mut layer_color = HashMap::<String, String>::default();
-    for (name, layer) in layers.iter() {
-        layer_polylines.insert(name.clone(), layer.into_polylines());
-        //layer_color.insert(name.clone(), colors.pop().unwrap().to_owned());
-    }
-
-    let all_polylines: Vec<PolyLine> = layer_polylines
-        .values()
-        .flat_map(|v| v.iter().cloned())
-        .collect();
-
-    // compute stats for polylines
-    let x_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.x_values.clone())
-        .collect();
-
-    let y_values: Vec<f64> = all_polylines
-        .iter()
-        .flat_map(|e| e.y_values.clone())
-        .collect();
-
-    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
-    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
-    let max_x = x_values.iter().copied().max_by(cmp).unwrap();
-    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
-    let max_y = y_values.iter().copied().max_by(cmp).unwrap();
-
-    // create document
-    let width = max_x - min_x;
-    let height = max_y - min_y;
-    let mut document = svg::Document::new()
-        // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
-        .set::<_, (f64, f64, f64, f64)>("viewBox", (0.0, 0.0, width, height))
-        .set(
-            "xmlns:inkscape",
-            "http://www.inkscape.org/namespaces/inkscape",
-        )
-        .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
-
-        
-    // insert polylines into svg paths
-
-    //Colors to use when creating layers. Priority from right to left
-    let mut colors = vec!["purple(16)","navy(16)","seagreen","darkslategrey","black","darkorchid","indianred","darkolivegreen","forestgreen", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "darkred", "chocolate", "blueviolet", "purple", "orange", "green", "blue", "red"];
-    for (name, polylines) in layer_polylines.iter() {
-        //Uses the next color for this layer. If none are left use black
-        let color = 
-        match colors.pop(){
-            None => "black",
-            Some(c) => c,
-        };
-        let mut group = svg_element::Group::new()
-            .set("inkscape:label", name.as_str())
-            .set("inkscape:groupmode", "layer")
-            .set("style", "display:inline");
-        for polyline in polylines.iter() {
-            let mut path_data = svg_element::path::Data::new();
-            let x_values = polyline.x_values.iter();
-            let y_values = polyline.y_values.iter();
-            let mut xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - max_y));
-
-            if let Some((x, y)) = xy_values.next() {
-                path_data = path_data.move_to((x, -y));
-            }
-
-            for (x, y) in xy_values {
-                path_data = path_data.line_to((x, -y));
-            }
-
-            if polyline.is_closed {
-                path_data = path_data.close();
-            }
-
-            let path = svg_element::Path::new()
-                .set("fill", "none")
-                .set("stroke", color)
-                .set("stroke-width", "0.03px")
-                .set("d", path_data);
-
-            group = group.add(path);
-        }
-
-        document = document.add(group);
-
-        info!("created svg layer: {}", name);
-    }
-    // write to file
-    
-    match svg::save(&output_path, &document) {
-        Ok(_) => info!("Created file: {}", output_path),
-        Err(err) => panic!("Error: {}", err),
-    };
 }
 
 fn extend_closest_lines(in_map: &HashMap<String, Vec<PolyLine>>) -> HashMap<String, Vec<PolyLine>>{
@@ -754,6 +568,18 @@ pub struct SvgApp {
     picked_path: Option<String>,
     loaded_dxf: Drawing,
     current_dxf: Drawing,
+    previous_dxf: Vec<Drawing>,
+    min_x: f64,
+    min_y: f64,
+    max_y: f64,
+    width: f64,
+    height: f64,
+    current_svg: svg::Document,
+    loaded_layers: HashMap<String, Vec<PolyLine>>,
+    current_layers: HashMap<String, Vec<PolyLine>>,
+    checkbox_for_layer: HashMap<String, bool>,
+    toggled: bool,
+    last_toggled: bool,
 }
 
 impl Default for SvgApp {
@@ -768,7 +594,18 @@ impl Default for SvgApp {
             picked_path: Some("".to_string()),
             loaded_dxf: Drawing::new(),
             current_dxf: Drawing::new(),
-
+            previous_dxf: Vec::<Drawing>::new(),
+            min_x: 0.0,
+            min_y: 0.0,
+            max_y: 0.0,
+            width: 0.0,
+            height: 0.0,
+            current_svg: svg::Document::new(),
+            loaded_layers: HashMap::<String, Vec<PolyLine>>::default(),
+            current_layers: HashMap::<String, Vec<PolyLine>>::default(),
+            checkbox_for_layer: HashMap::<String, bool>::default(),
+            toggled: true,
+            last_toggled: true,
         }
     }
     
@@ -776,33 +613,62 @@ impl Default for SvgApp {
 
 
 
-//design of the app, look at documenation for inspiration
+//start of app
 impl eframe::App for SvgApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         //design the frame
         let _my_frame = egui::containers::Frame {
-            inner_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. }, //margins (affects the color-border)
-            outer_margin: egui::style::Margin { left: 0., right: 0., top: 0., bottom: 0. },
+            inner_margin: egui::style::Margin { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }, //margins (affects the color-border)
+            outer_margin: egui::style::Margin { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
             rounding: egui::Rounding { nw: 1.0, ne: 1.0, sw: 1.0, se: 1.0 },
             shadow: eframe::epaint::Shadow { extrusion: 1.0, color: Color32::YELLOW },
             fill: Color32::WHITE, //background fill color, affected by the margin
             stroke: egui::Stroke::new(2.0, Color32::GOLD),
         };
-        //ui panelsca
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("SVG example");
-            ui.label("The SVG is rasterized and displayed as a texture.");
-
+        egui::SidePanel::right("right_panel").show(ctx, |ui|{
+            ui.heading("Useful tools (Hopefully)");
+            ui.set_min_size(ui.available_size());
+            //ui.checkbox(&mut self.selected, "Test");
+            ui.checkbox(&mut self.toggled, "Toggle All On/Off");
             ui.separator();
+            let mut checkboxes = HashMap::<String, bool>::default();
+            for layer_name in self.loaded_layers.keys() {
+                let mut checkval = self.checkbox_for_layer.get(layer_name).unwrap().clone();
+                ui.checkbox(&mut checkval, layer_name);
+                checkboxes.insert(layer_name.clone(), checkval);
+            }
+            self.checkbox_for_layer = checkboxes;
             
-
-            let mut size = ui.available_size();
-            size.x = size.x / 2.;
-            size.y = size.y / 2.;
+            if self.toggled != self.last_toggled {
+                let mut checkboxes = HashMap::<String, bool>::default();
+                for layer_name in self.loaded_layers.keys() {
+                    checkboxes.insert(layer_name.clone(), self.toggled);
+                }
+                self.checkbox_for_layer = checkboxes;
+            }
+            self.last_toggled = self.toggled;
+            if ui.button("Rebuild svg").clicked() {
+                let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                for (name, checked) in &self.checkbox_for_layer {
+                    if checked.clone(){
+                        temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
+                    }
+                }
+                self.current_layers = temp;
+                self.current_dxf = convert_specific_layers(&self.current_layers, &self.loaded_dxf, &self.current_layers.keys().cloned().collect(), &self.min_x, &self.min_y);
+                self.current_svg = create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                    "test", //path of svg file to display
+                    self.current_svg.to_string().as_bytes(), 
+                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                )
+                .unwrap();
+            }
             
-            self.svg_image.show_size(ui, size);
-            ui.label("Upload a DXF file!");
-
+        });
+        egui::TopBottomPanel::top("bottom_panel").show(ctx, |ui|{
+            ui.heading("File Selector");
+            //ui.set_min_size(ui.available_size());
             if ui.button("Open file…").clicked() {
                 if let Some(path) = rfd::FileDialog::new().pick_file() {
                     self.picked_path = Some(path.display().to_string());
@@ -816,107 +682,56 @@ impl eframe::App for SvgApp {
                 });
             }
             if ui.button("Load file!").clicked() {
+                //self.selected = true;
                 self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("expexted valid input file");
-                
-                self.current_dxf = alter_dxf(&self.loaded_dxf);
-                let layers = extract_layers(&self.current_dxf);
-                //Colors to use when creating svg.. The last one is used first
-                //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
                 let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
-                //let mut layer_color = HashMap::<String, String>::default();
+                let mut layers = extract_layers(&self.loaded_dxf);
+                let mut checkbox_map = HashMap::<String, bool>::default();
+                
+                
                 for (name, layer) in layers.iter() {
                     layer_polylines.insert(name.clone(), layer.into_polylines());
-                //layer_color.insert(name.clone(), colors.pop().unwrap().to_owned());
+                    //layer_color.insert(name.clone(), colors.pop().unwrap().to_owned());
                 }
+                self.loaded_layers = layer_polylines.clone();
+                self.current_layers = layer_polylines.clone();
 
-                let all_polylines: Vec<PolyLine> = layer_polylines
-                    .values()
-                    .flat_map(|v| v.iter().cloned())
-                    .collect();
-
-                // compute stats for polylines
-                let x_values: Vec<f64> = all_polylines
-                    .iter()
-                    .flat_map(|e| e.x_values.clone())
-                    .collect();
-
-                let y_values: Vec<f64> = all_polylines
-                    .iter()
-                    .flat_map(|e| e.y_values.clone())
-                    .collect();
-
-                let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
-                let min_x = x_values.iter().copied().min_by(cmp).unwrap();
-                let max_x = x_values.iter().copied().max_by(cmp).unwrap();
-                let min_y = y_values.iter().copied().min_by(cmp).unwrap();
-                let max_y = y_values.iter().copied().max_by(cmp).unwrap();
-
-                // create document
-                let width = max_x - min_x;
-                let height = max_y - min_y;
-                let mut document = svg::Document::new()
-                // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
-                    .set::<_, (f64, f64, f64, f64)>("viewBox", (0.0, 0.0, width, height))
-                    .set(
-                    "xmlns:inkscape",
-                    "http://www.inkscape.org/namespaces/inkscape",
-                )
-                    .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
-
-            
-                // insert polylines into svg paths
-
-                //Colors to use when creating layers. Priority from right to left
-                let mut colors = vec!["purple(16)","navy(16)","seagreen","darkslategrey","black","darkorchid","indianred","darkolivegreen","forestgreen", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "darkred", "chocolate", "blueviolet", "purple", "orange", "green", "blue", "red"];
-                for (name, polylines) in layer_polylines.iter() {
-                    //Uses the next color for this layer. If none are left use black
-                    let color = 
-                    match colors.pop(){
-                        None => "black",
-                        Some(c) => c,
-                    };
-                    let mut group = svg_element::Group::new()
-                        .set("inkscape:label", name.as_str())
-                        .set("inkscape:groupmode", "layer")
-                        .set("style", "display:inline");
-                    for polyline in polylines.iter() {
-                        let mut path_data = svg_element::path::Data::new();
-                        let x_values = polyline.x_values.iter();
-                        let y_values = polyline.y_values.iter();
-                        let mut xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - max_y));
-
-                        if let Some((x, y)) = xy_values.next() {
-                            path_data = path_data.move_to((x, -y));
-                        }
-
-                        for (x, y) in xy_values {
-                            path_data = path_data.line_to((x, -y));
-                        }
-
-                        if polyline.is_closed {
-                            path_data = path_data.close();
-                        }
-
-                        let path = svg_element::Path::new()
-                            .set("fill", "none")
-                            .set("stroke", color)
-                            .set("stroke-width", "0.03px")
-                            .set("d", path_data);
-
-                        group = group.add(path);
-                    }
-
-                    document = document.add(group);
-
-                    info!("created svg layer: {}", name);
+                for layer_name in self.loaded_layers.keys() {
+                    //println!("{}", layer_name);
+                    checkbox_map.insert(layer_name.clone(), true);
                 }
+                self.checkbox_for_layer = checkbox_map;
+
+                let result = calculate_min_max(&layer_polylines);
+                self.min_x = result.0;
+                self.min_y = result.1;
+                self.max_y = result.2;
+                self.width = result.3;
+                self.height = result.4;
+
+                //self.current_dxf = alter_dxf(&self.loaded_dxf);
+                //layers = extract_layers(&self.current_dxf);
+                //Colors to use when creating svg.. The last one is used first
+                //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
+                
+                self.current_svg = create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
                 self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                     "test", //path of svg file to display
-                    document.to_string().as_bytes(), 
+                    self.current_svg.to_string().as_bytes(), 
                     FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                 )
                 .unwrap();
             }
+        });
+        //ui the last panel added. this one should only contain our svg if we decide to use multiple panels down the line
+        egui::CentralPanel::default().show(ctx, |ui| {
+            /*let mut size = ui.available_size();
+            size.x = size.x / 1.2;
+            size.y = size.y / 1.2;*/
+            
+            self.svg_image.show_size(ui, ui.available_size());
+
+            
             /*if ui.button("Set!").clicked() {
                 ctx.request_repaint();
                 println!("Path: {}", self.look_path.clone());
@@ -934,6 +749,34 @@ impl eframe::App for SvgApp {
 fn convert_dxf(file: Drawing) -> String {
     String::new()
 }
+fn calculate_min_max(layer_polylines: &HashMap<String, Vec<PolyLine>>) -> (f64, f64, f64, f64, f64){
+    let all_polylines: Vec<PolyLine> = layer_polylines
+        .values()
+        .flat_map(|v| v.iter().cloned())
+        .collect();
+
+    // compute stats for polylines
+    let x_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.x_values.clone())
+        .collect();
+
+    let y_values: Vec<f64> = all_polylines
+        .iter()
+        .flat_map(|e| e.y_values.clone())
+        .collect();
+
+    let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
+    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
+    let max_x = x_values.iter().copied().max_by(cmp).unwrap();
+    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
+    let max_y = y_values.iter().copied().max_by(cmp).unwrap();
+
+    // create document
+    let width = max_x - min_x;
+    let height = max_y - min_y;
+    (min_x, min_y, max_y, width, height)
+}
 /*fn layers_as_svg() -> &'static [u8] {
     let mut document = svg::Document::new()
     // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
@@ -945,3 +788,62 @@ fn convert_dxf(file: Drawing) -> String {
     .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
 document.to_string().as_bytes()
 }*/
+fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64, max_y: &f64, width: &f64, height: &f64) -> svg::Document{
+    let mut document = svg::Document::new()
+    // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
+        .set::<_, (f64, f64, f64, f64)>("viewBox", (0.0, 0.0, width.clone(), height.clone()))
+        .set(
+        "xmlns:inkscape",
+        "http://www.inkscape.org/namespaces/inkscape",
+    )
+        .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
+
+
+    // insert polylines into svg paths
+
+    //Colors to use when creating layers. Priority from right to left
+    let mut colors = vec!["purple(16)","navy(16)","seagreen","darkslategrey","black","darkorchid","indianred","darkolivegreen","forestgreen", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "darkred", "chocolate", "blueviolet", "purple", "orange", "green", "blue", "red"];
+    for (name, polylines) in layer_polylines.iter() {
+        //Uses the next color for this layer. If none are left use black
+        let color = 
+        match colors.pop(){
+            None => "black",
+            Some(c) => c,
+        };
+        let mut group = svg_element::Group::new()
+            .set("inkscape:label", name.as_str())
+            .set("inkscape:groupmode", "layer")
+            .set("style", "display:inline");
+        for polyline in polylines.iter() {
+            let mut path_data = svg_element::path::Data::new();
+            let x_values = polyline.x_values.iter();
+            let y_values = polyline.y_values.iter();
+            let mut xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - max_y));
+
+            if let Some((x, y)) = xy_values.next() {
+                path_data = path_data.move_to((x, -y));
+            }
+
+            for (x, y) in xy_values {
+                path_data = path_data.line_to((x, -y));
+            }
+
+            if polyline.is_closed {
+                path_data = path_data.close();
+            }
+
+            let path = svg_element::Path::new()
+                .set("fill", "none")
+                .set("stroke", color)
+                .set("stroke-width", "0.03px")
+                .set("d", path_data);
+
+            group = group.add(path);
+        }
+
+        document = document.add(group);
+
+        info!("created svg layer: {}", name);
+    }
+    document
+}
