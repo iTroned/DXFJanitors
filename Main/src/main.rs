@@ -252,12 +252,42 @@ fn add_layer_to_file(dxf_file: &mut dxf::Drawing, layer: &Vec<PolyLine>, layer_n
         add_polyline_to_file(dxf_file, &polyline, min_x, min_y, &layer_name);
     }
 }
+fn add_layer_to_file_no_extras(dxf_file: &mut dxf::Drawing, layer: &Vec<PolyLine>, layer_name: &String) {
+    let mut new_layer = dxf::tables::Layer::default();
+    new_layer.name = layer_name.clone();
+    dxf_file.add_layer(new_layer);
+    for polyline in layer{
+        add_polyline_to_file_no_extras(dxf_file, &polyline, &layer_name);
+    }
+}
 fn add_polyline_to_file(dxf_file: &mut dxf::Drawing, polyline: &PolyLine, min_x: &f64, min_y: &f64, layer_name: &String){
     let mut new_polyline = dxf::entities::LwPolyline::default();
 
     let x_values = polyline.x_values.iter();
     let y_values = polyline.y_values.iter();
     let xy_values = x_values.zip(y_values).map(|(x, y)| (x - min_x, y - min_y));
+    let mut counter = 0;
+    for(x, y) in xy_values{
+        let mut vertex = dxf::LwPolylineVertex::default();
+        vertex.x = x;
+        vertex.y = y;
+        vertex.id = counter;
+        counter += 1;
+        new_polyline.vertices.push(vertex);
+    }
+    new_polyline.set_is_closed(polyline.is_closed);
+    let mut entity = dxf::entities::Entity::new(dxf::entities::EntityType::LwPolyline(new_polyline));
+    let mut common = dxf::entities::EntityCommon::default();
+    common.layer = layer_name.clone();
+    entity.common = common;
+    dxf_file.add_entity(entity);
+}
+fn add_polyline_to_file_no_extras(dxf_file: &mut dxf::Drawing, polyline: &PolyLine, layer_name: &String){
+let mut new_polyline = dxf::entities::LwPolyline::default();
+
+    let x_values = polyline.x_values.iter();
+    let y_values = polyline.y_values.iter();
+    let xy_values = x_values.zip(y_values).map(|(x, y)| (x.clone(), y.clone()));
     let mut counter = 0;
     for(x, y) in xy_values{
         let mut vertex = dxf::LwPolylineVertex::default();
@@ -435,7 +465,7 @@ fn angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
     let length_v1 = ((v1.0 * v1.0) + (v1.1*v1.1)).sqrt(); //the length of a vector is |u| = sqrt(x^2+y^2)
     let length_v2 = ((v2.0*v2.0) + (v2.1*v2.1)).sqrt();
 
-    let dotproduct = ((v1.0*v2.0) + (v1.1*v2.1)); //dot product of a 2D vector u*v = x1x2 + y1y2
+    let dotproduct = (v1.0*v2.0) + (v1.1*v2.1); //dot product of a 2D vector u*v = x1x2 + y1y2
 
     let angle = (dotproduct/(length_v1 * length_v2)).acos();
     angle * 180. / PI //return angle in degrees (f64)
@@ -443,12 +473,12 @@ fn angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
 
 //B is the vertex where the angle is calculated
 //function creates two vectors and uses the function angle vectors to return the angle
-fn angle_three_points(A: (f64, f64), B: (f64, f64), C: (f64, f64)) -> f64{
+fn angle_three_points(a: (f64, f64), b: (f64, f64), c: (f64, f64)) -> f64{
     //creating vectors: AB and BC
-    let AB = (B.0 - A.0, B.1 - A.1); //vector AB = (B1 - A1, B2 - A2)
-    let BC = (C.0 - B.0, C.1 - B.1);
+    let ab = (a.0 - b.0, b.1 - a.1); //vector AB = (B1 - A1, B2 - A2)
+    let bc = (c.0 - b.0, c.1 - b.1);
 
-    let angle = angle_vectors(AB, BC);
+    let angle = angle_vectors(ab, bc);
     angle //return angle
 }
 fn make_polyline_circle(num_segments: usize, c: &dxfe::Circle) -> PolyLine {
@@ -568,7 +598,10 @@ pub struct SvgApp {
     picked_path: Option<String>,
     loaded_dxf: Drawing,
     current_dxf: Drawing,
-    previous_dxf: Vec<Drawing>,
+    previous_dxfs: Vec<Drawing>,
+    next_dxfs: Vec<Drawing>,
+    previous_svgs: Vec<svg::Document>,
+    next_svgs: Vec<svg::Document>,
     min_x: f64,
     min_y: f64,
     max_y: f64,
@@ -594,7 +627,10 @@ impl Default for SvgApp {
             picked_path: Some("".to_string()),
             loaded_dxf: Drawing::new(),
             current_dxf: Drawing::new(),
-            previous_dxf: Vec::<Drawing>::new(),
+            previous_dxfs: Vec::<Drawing>::new(),
+            next_dxfs: Vec::<Drawing>::new(),
+            previous_svgs: Vec::<svg::Document>::new(),
+            next_svgs: Vec::<svg::Document>::new(),
             min_x: 0.0,
             min_y: 0.0,
             max_y: 0.0,
@@ -629,6 +665,46 @@ impl eframe::App for SvgApp {
             ui.heading("Useful tools (Hopefully)");
             ui.set_min_size(ui.available_size());
             //ui.checkbox(&mut self.selected, "Test");
+            ui.horizontal(|ui|{
+                if ui.button("Undo").clicked() {
+                    self.next_dxfs.push(clone_dxf(&self.current_dxf));
+                    self.next_svgs.push(self.current_svg.clone());
+                    self.current_dxf = match self.previous_dxfs.pop(){
+                        None => clone_dxf(&self.current_dxf),
+                        Some(x) => x,
+                    };
+                    self.current_svg = match self.previous_svgs.pop(){
+                        None => self.current_svg.clone(),
+                        Some(x) => x,
+                    };
+                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                        "test", //path of svg file to display
+                        self.current_svg.to_string().as_bytes(), 
+                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                    )
+                    .unwrap();
+                }
+                if ui.button("Redo").clicked() {
+                    self.previous_dxfs.push(clone_dxf(&self.current_dxf));
+                    self.previous_svgs.push(self.current_svg.clone());
+                    self.current_dxf = match self.next_dxfs.pop(){
+                        None => clone_dxf(&self.current_dxf),
+                        Some(x) => x,
+                    };
+                    self.current_svg = match self.next_svgs.pop(){
+                        None => self.current_svg.clone(),
+                        Some(x) => x,
+                    };
+                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                        "test", //path of svg file to display
+                        self.current_svg.to_string().as_bytes(), 
+                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                    )
+                    .unwrap();
+                }
+            });
+            
+            ui.separator();
             ui.checkbox(&mut self.toggled, "Toggle All On/Off");
             ui.separator();
             let mut checkboxes = HashMap::<String, bool>::default();
@@ -655,6 +731,10 @@ impl eframe::App for SvgApp {
                     }
                 }
                 self.current_layers = temp;
+                self.previous_dxfs.push(clone_dxf(&self.current_dxf));
+                self.previous_svgs.push(self.current_svg.clone());
+                //TODO fix a better way to store previous files, so we can remove the first of them after a certain treshold
+                //println!("Length of DXF-vector: {}", self.previous_dxfs.len());
                 self.current_dxf = convert_specific_layers(&self.current_layers, &self.loaded_dxf, &self.current_layers.keys().cloned().collect(), &self.min_x, &self.min_y);
                 self.current_svg = create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                 self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
@@ -683,9 +763,13 @@ impl eframe::App for SvgApp {
             }
             if ui.button("Load file!").clicked() {
                 //self.selected = true;
+                self.previous_dxfs = Vec::<Drawing>::new();
+                self.next_dxfs = Vec::<Drawing>::new();
+                self.previous_svgs = Vec::<svg::Document>::new();
+                self.next_svgs = Vec::<svg::Document>::new();
                 self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("expexted valid input file");
                 let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
-                let mut layers = extract_layers(&self.loaded_dxf);
+                let layers = extract_layers(&self.loaded_dxf);
                 let mut checkbox_map = HashMap::<String, bool>::default();
                 
                 
@@ -746,9 +830,7 @@ impl eframe::App for SvgApp {
 
     }
 } 
-fn convert_dxf(file: Drawing) -> String {
-    String::new()
-}
+
 fn calculate_min_max(layer_polylines: &HashMap<String, Vec<PolyLine>>) -> (f64, f64, f64, f64, f64){
     let all_polylines: Vec<PolyLine> = layer_polylines
         .values()
@@ -846,4 +928,11 @@ fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64, max
         info!("created svg layer: {}", name);
     }
     document
+}
+fn clone_dxf(in_file: &Drawing) -> Drawing {
+    let mut out_file = Drawing::new();
+    for (name, layer) in extract_layers(in_file) {
+        add_layer_to_file_no_extras(&mut out_file, &layer.into_polylines(), &name);
+    }
+    out_file
 }
