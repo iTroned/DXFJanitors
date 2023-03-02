@@ -9,6 +9,7 @@ use egui_extras::image::FitTo;
 use egui::Color32;
 use clap::Parser;
 
+use pyo3::prelude::*;
 use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point, Drawing};
 use std::{collections::HashMap, f64::consts::PI, hash::Hash};
 use svg::node::element as svg_element;
@@ -138,6 +139,12 @@ fn main() {
             .write_style("LOG_STYLE")
             ,
     ); 
+
+    let gil = Python::acquire_gil(); //global interpreter lock
+    let py = gil.python();
+    main_(py).map_err(|e| {
+        e.print_and_set_sys_last_vars(py); //print error
+    });
     
     /*let input_path = "test.dxf".to_string();
 
@@ -150,6 +157,8 @@ fn main() {
     let layers = extract_layers(&in_file);
     connect_layers(&layers, dxf_file, &output_path, &output_path_svg); 
 */
+
+
 
     //EGUI
     let native_options = eframe::NativeOptions::default();
@@ -166,6 +175,15 @@ fn main() {
     
     
 }
+
+fn _main(py: Python) -> PyResult<()>{
+    let code = include_str!("pythontest.py");
+    let test: Py<PyAny> = PyModule::from_code(py, code, pythontest.py, pythontest)?;
+    
+    Ok(())
+}
+
+
 /*fn alter_dxf(in_file: &Drawing) -> Drawing{
     let mut out_file = dxf::Drawing::new();
     let layers = extract_layers(&in_file);
