@@ -1,7 +1,7 @@
 #![warn(clippy::all, rust_2018_idioms)]
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-
+mod dxfwrite;
 mod algorithms;
 use algorithms::{CustomPoint, PointWithNeighbour};
 mod svgwrite;
@@ -37,14 +37,7 @@ fn main() {
     /*main_(py).map_err(|e| {
         e.print_and_set_sys_last_vars(py); //print error
     });*/
-    /*match Python::with_gil(|py| -> PyResult<()>{
-        let code = include_str!("pythontest.py");
-        let test: &PyAny = PyModule::from_code(py, code, "pythontest.py", "pythontest")?;
-        Ok(())
-    }){
-        Ok(_) => info!("Handled python script!"), 
-        Err(err) => error!("Something went wrong when handling python script: {}", err),
-    };*/
+    
     
     
     /*let input_path = "test.dxf".to_string();
@@ -247,14 +240,34 @@ impl eframe::App for SvgApp {
             }
             
         });
-        egui::TopBottomPanel::top("bottom_panel").show(ctx, |ui|{
-            ui.heading("File Selector");
-            //ui.set_min_size(ui.available_size());
-            if ui.button("Open file…").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
-                    self.picked_path = Some(path.display().to_string());
+        egui::TopBottomPanel::top("top_panel").show(ctx, |ui|{
+            ui.horizontal(|ui|{
+                ui.heading("File Selector");
+                //ui.set_min_size(ui.available_size());
+                if ui.button("Open file…").clicked() {
+                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                        self.picked_path = Some(path.display().to_string());
+                    }
                 }
-            }
+                if ui.button("Save as SVG").clicked() {
+                    if !&self.picked_path.clone().unwrap().eq("") {
+                        svgwrite::save_svg(&self.picked_path.clone().unwrap(), &self.current_svg);
+                    }
+                    
+                }
+                if ui.button("Save as DXF (WIP)").clicked() {
+                    if !&self.picked_path.clone().unwrap().eq("") {
+                        match dxfwrite::savedxf(self.current_layers.clone(), &self.picked_path.clone().unwrap()){
+                            Ok(_) => info!("DXF saved!"),
+                            Err(err) => panic!("Error while saving DXF: {}", err),
+                        };
+                        //dxfwrite::savedxf(self.current_layers.clone(), &self.picked_path.clone().unwrap());
+                    }
+                    
+                }
+                
+                
+            });
             
             if let Some(picked_path) = &self.picked_path {
                 ui.horizontal(|ui| {
@@ -262,6 +275,7 @@ impl eframe::App for SvgApp {
                     ui.monospace(picked_path);
                 });
             }
+            
             if ui.button("Load file!").clicked() {
                 //self.selected = true;
                 self.previous_dxfs = Vec::<Drawing>::new();

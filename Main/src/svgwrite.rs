@@ -64,3 +64,9 @@ pub fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64,
     }
     document
 }
+pub fn save_svg(path: &String, file: &Document){
+    match svg::save(path.clone().replace('.', "_").replace(' ', "_") + "_export.svg", file) {
+        Ok(_) => info!("Created file: {}", path),
+        Err(err) => panic!("Error: {}", err),
+    };
+}

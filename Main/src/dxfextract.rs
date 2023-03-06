@@ -1,10 +1,11 @@
 const NUM_SEGMENTS: usize = 16;
 use dxf::{entities::{self as dxfe}};
+use serde::{Serialize, Deserialize};
 use std::{collections::HashMap, f64::consts::PI};
 use log::{error, info, warn};
 use dxfe::EntityType as ET;
 use dxf::Drawing;
-#[derive(Clone, Default, PartialEq)]
+#[derive(Clone, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct PolyLine {
     pub is_closed: bool,
     pub x_values: Vec<f64>,
