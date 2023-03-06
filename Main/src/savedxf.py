@@ -9,14 +9,14 @@ def savedxf(*args, **kwargs):
     json_data = kwargs["json"]
     layers = json.loads(json_data)
     path = kwargs["path"]
-    file = ezdxf.new()
+    file = ezdxf.new("R2018", setup=True)
     file.layers.remove("0")
     msp = file.modelspace()
     counter = 1
     for layer, polylines in layers.items():
-        file.layers.add(layer)
+        file.layers.add(name=layer, color=counter)
         #print(len(polylines))
-        #counter += 1
+        counter += 1
         for polyline in polylines:
             points = []
             x_values = polyline["x_values"]
@@ -26,5 +26,6 @@ def savedxf(*args, **kwargs):
 
             for i in range(len(x_values)):
                 points.append((x_values[i], y_values[i]))
-            msp.add_lwpolyline(points)
+            #print(points)
+            msp.add_lwpolyline(points, close=polyline["is_closed"], dxfattribs={"layer": layer})
     file.saveas(path)
