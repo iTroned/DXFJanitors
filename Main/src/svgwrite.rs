@@ -1,10 +1,11 @@
-
+use dxf::Drawing;
 use dxfextract::PolyLine;
 use svg::node::element as svg_element;
 use svg::Document;
 use std::{collections::HashMap, f64::consts::PI};
 use log::{error, info, warn};
 use crate::dxfextract;
+use pyo3::{PyResult, types::{PyModule, IntoPyDict}, PyAny, Python, Py};
 pub fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64, max_y: &f64, width: &f64, height: &f64) -> Document{
     let mut document = Document::new()
     // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
@@ -69,4 +70,24 @@ pub fn save_svg(path: &String, file: &Document){
         Ok(_) => info!("Created file: {}", path),
         Err(err) => panic!("Error: {}", err),
     };
+}
+pub fn save_svg_ez(path: &String) -> PyResult<()>{
+    let out_path = path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+    Python::with_gil(|py| {
+        let fun: Py<PyAny> = PyModule::from_code(
+            py,
+            include_str!("savedxf.py"),
+            "savedxf.py",
+            "savedxf",
+        )?
+        .getattr("savesvg")?
+        .into();
+        
+        let mut kwargs = HashMap::<&str, &str>::new();
+        kwargs.insert("in_path", &path);
+        kwargs.insert("out_path", &out_path);
+        fun.call(py, (), Some(kwargs.into_py_dict(py)))?;
+
+        Ok(())
+    })
 }

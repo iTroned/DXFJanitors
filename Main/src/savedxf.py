@@ -2,9 +2,11 @@ import ezdxf
 import sys
 import os
 import json
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from ezdxf import recover
 from ezdxf.addons.drawing import matplotlib
+from ezdxf.addons.drawing import RenderContext, Frontend
+from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
 def savedxf(*args, **kwargs): 
     json_data = kwargs["json"]
     layers = json.loads(json_data)
@@ -29,3 +31,22 @@ def savedxf(*args, **kwargs):
             #print(points)
             msp.add_lwpolyline(points, close=polyline["is_closed"], dxfattribs={"layer": layer})
     file.saveas(path)
+
+def savesvg(*args, **kwargs):
+    in_path = kwargs["in_path"]
+    out_path = kwargs["out_path"]
+    try:
+        doc, auditor = recover.readfile(in_path)
+    except IOError:
+        print(f'Not a DXF file or a generic I/O error.')
+        sys.exit(1)
+    except ezdxf.DXFStructureError:
+        print(f'Invalid or corrupted DXF file.')
+        sys.exit(2)
+
+# The auditor.errors attribute stores severe errors,
+# which may raise exceptions when rendering.
+    if not auditor.has_errors:
+        fig = plt.figure()
+        Frontend(RenderContext(doc), MatplotlibBackend(fig.add_axes([0, 0, 1, 1]))).draw_layout(doc.modelspace(), finalize=True)
+        fig.savefig(out_path)

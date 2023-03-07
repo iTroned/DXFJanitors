@@ -249,6 +249,15 @@ impl eframe::App for SvgApp {
                         self.picked_path = Some(path.display().to_string());
                     }
                 }
+                if ui.button("Save original as SVG (ezdxf)").clicked() {
+                    if !&self.picked_path.clone().unwrap().eq("") {
+                        match svgwrite::save_svg_ez(&self.picked_path.clone().unwrap()){
+                            Ok(_) => info!("DXF saved!"),
+                            Err(err) => panic!("Error while saving DXF: {}", err),
+                        };
+                    }
+                    
+                }
                 if ui.button("Save as SVG").clicked() {
                     if !&self.picked_path.clone().unwrap().eq("") {
                         svgwrite::save_svg(&self.picked_path.clone().unwrap(), &self.current_svg);
