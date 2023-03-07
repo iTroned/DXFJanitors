@@ -12,7 +12,8 @@ def savedxf(*args, **kwargs):
     layers = json.loads(json_data)
     path = kwargs["path"]
     file = ezdxf.new("R2018", setup=True)
-    file.layers.remove("0")
+    if "0" in layers:
+        file.layers.remove("0")
     msp = file.modelspace()
     counter = 1
     for layer, polylines in layers.items():
