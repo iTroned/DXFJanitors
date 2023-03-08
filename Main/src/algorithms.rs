@@ -62,6 +62,9 @@ fn find_closest_point(point: CustomPoint, vector: &Vec<PointWithNeighbour>) -> &
     }
     closest_point
 }
+fn distance(point_1x: &f64, point_1y: &f64, point_2x: &f64, point_2y: &f64) -> f64{
+    f64::sqrt((point_1x - point_2x) * (point_1x - point_2x) + (point_1y - point_2y) * (point_1y - point_2y))
+}
 
 //angle at the point two linear functions intercept
 //angle for two linear lines: angle = tan^-1 (|m2-m1|/(1+m1m2)) Where m1 is the slope of function A and m2 is the slope of function B
@@ -103,6 +106,7 @@ fn extend_closest_lines(in_map: &HashMap<String, Vec<PolyLine>>) -> HashMap<Stri
         for polyline in in_polylines {
             if polyline.is_closed {
                 out_polylines.push(polyline.clone());
+                continue;
             }
 
             let len: i32 = polyline.x_values.len().try_into().unwrap();
@@ -208,6 +212,89 @@ fn extend_closest_lines(in_map: &HashMap<String, Vec<PolyLine>>) -> HashMap<Stri
         out_map.insert(name.clone(), out_polylines);
     }
     out_map
+}
+pub fn try_to_close_polylines(layer_polylines: &HashMap<String, Vec<PolyLine>>, max_distance: &Option<f64>, max_angle: &Option<f64>, entropy: &Option<i32>) -> HashMap<String, Vec<PolyLine>> {
+    let mut out = HashMap::<String, Vec<PolyLine>>::default();
+    for(name, polylines) in layer_polylines{
+        let mut out_polylines = Vec::<PolyLine>::default();
+        let mut iter = polylines.clone();
+
+        while let Some(mut polyline) = iter.pop(){
+            if polyline.is_closed{
+                out_polylines.push(polyline);
+                continue;
+            }
+            let start_x = polyline.x_values.first().unwrap();
+            let start_y = polyline.y_values.first().unwrap();
+            let end_x = polyline.x_values.last().unwrap();
+            let end_y = polyline.y_values.last().unwrap();
+            let start_distance = distance(start_x, start_y, end_x, end_y);
+            let mut min_distance = start_distance.clone();
+            let mut should_close = true;
+            let mut start_connection: &PolyLine;
+            let mut end_connection: &PolyLine;
+            let mut current_start_x: &f64;
+            let mut current_start_y: &f64;
+            let mut current_end_x: &f64;
+            let mut current_end_y: &f64;
+            //iterates through the polylines that are left in the stack
+            for cmp_polyline in &iter{
+                let cmp_start_x = cmp_polyline.x_values.first().unwrap();
+                let cmp_start_y = cmp_polyline.y_values.first().unwrap();
+                let cmp_end_x = cmp_polyline.x_values.last().unwrap();
+                let cmp_end_y = cmp_polyline.y_values.last().unwrap();
+                
+                //checks startpoint of selected polyline
+                //against startpoint of current
+                let mut cur_distance = distance(start_x, start_y, cmp_start_x, cmp_start_y);
+                if cur_distance < min_distance{
+                    should_close = false;
+                    current_start_x = cmp_start_x;
+                    current_start_y = cmp_start_y;
+                    min_distance = cur_distance;
+                    start_connection = cmp_polyline;
+                }
+                //against endpoint of current
+                cur_distance = distance(start_x, start_y, cmp_end_x, cmp_end_y);
+                if cur_distance < min_distance{
+                    should_close = false;
+                    current_start_x = cmp_start_x;
+                    current_start_y = cmp_start_y;
+                    min_distance = cur_distance;
+                    start_connection = cmp_polyline;
+                }
+                min_distance = start_distance;
+
+                //checks endpoint of selected polyline
+                //against startpoint of current
+                cur_distance = distance(end_x, end_y, cmp_end_x, cmp_start_y);
+                if cur_distance < min_distance{
+                    should_close = false;
+                    current_end_x = cmp_start_x;
+                    current_end_y = cmp_start_y;
+                    min_distance = cur_distance;
+                    end_connection = cmp_polyline;
+                }
+                //against endpoint of current
+                cur_distance = distance(end_x, end_y, cmp_end_x, cmp_end_y);
+                if cur_distance < min_distance{
+                    should_close = false;
+                    current_end_x = cmp_start_x;
+                    current_end_y = cmp_start_y;
+                    min_distance = cur_distance;
+                    end_connection = cmp_polyline;
+                }
+            }
+            if should_close{
+                polyline.is_closed = true;
+                out_polylines.push(polyline);
+                //out_polylines.push(PolyLine::new(true, polyline.x_values.clone(), polyline.y_values.clone()));
+                continue;
+            }
+        }
+        out.insert(name.clone(), out_polylines);
+    }
+    out
 }
 pub fn calculate_min_max(layer_polylines: &HashMap<String, Vec<PolyLine>>) -> (f64, f64, f64, f64, f64){
     let all_polylines: Vec<PolyLine> = layer_polylines

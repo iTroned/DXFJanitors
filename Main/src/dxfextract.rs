@@ -12,7 +12,7 @@ pub struct PolyLine {
     pub y_values: Vec<f64>,
 }
 impl PolyLine {
-    fn new(is_closed: bool, x_values: Vec<f64>, y_values: Vec<f64>) -> Self {
+    pub fn new(is_closed: bool, x_values: Vec<f64>, y_values: Vec<f64>) -> Self {
         Self {is_closed, x_values, y_values}
     }
 }

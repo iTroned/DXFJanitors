@@ -31,14 +31,6 @@ fn main() {
             .write_style("LOG_STYLE")
             ,
     ); 
-
-    //let gil = Python::with_gil(f); //global interpreter lock
-    //let py = gil.python();
-    /*main_(py).map_err(|e| {
-        e.print_and_set_sys_last_vars(py); //print error
-    });*/
-    
-    
     
     /*let input_path = "test.dxf".to_string();
 
@@ -69,13 +61,6 @@ fn main() {
     
     
 }
-
-/*fn main_(py: Python) -> PyResult<()>{
-    let code = include_str!("pythontest.py");
-    let test: &PyAny = PyModule::from_code(py, code, "pythontest.py", "pythontest")?;
-    
-    Ok(())
-}*/
 
 
 /*fn alter_dxf(in_file: &Drawing) -> Drawing{
