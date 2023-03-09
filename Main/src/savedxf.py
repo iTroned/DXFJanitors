@@ -11,7 +11,7 @@ def savedxf(*args, **kwargs):
     json_data = kwargs["json"]
     layers = json.loads(json_data)
     path = kwargs["path"]
-    file = ezdxf.new("R2018", setup=True)
+    file = ezdxf.new("R2010", setup=True)
     if "0" in layers:
         file.layers.remove("0")
     msp = file.modelspace()

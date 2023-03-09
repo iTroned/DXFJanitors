@@ -53,7 +53,7 @@ pub fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64,
             let path = svg_element::Path::new()
                 .set("fill", "none")
                 .set("stroke", color)
-                .set("stroke-width", "0.03px")
+                .set("stroke-width", "0.05px")
                 .set("d", path_data);
 
             group = group.add(path);

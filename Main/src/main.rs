@@ -181,6 +181,16 @@ impl eframe::App for SvgApp {
                     )
                     .unwrap();
                 }
+                if ui.button("Connect").clicked(){
+                    self.current_layers = algorithms::try_to_close_polylines(&self.current_layers, &None, &None, &None);
+                    self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                    "test", //path of svg file to display
+                    self.current_svg.to_string().as_bytes(), 
+                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                )
+                .unwrap();
+                }
             });
             
             ui.separator();
@@ -276,7 +286,7 @@ impl eframe::App for SvgApp {
                 self.next_dxfs = Vec::<Drawing>::new();
                 self.previous_svgs = Vec::<svg::Document>::new();
                 self.next_svgs = Vec::<svg::Document>::new();
-                self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("expexted valid input file");
+                self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
                 let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
                 let layers = dxfextract::extract_layers(&self.loaded_dxf);
                 let mut checkbox_map = HashMap::<String, bool>::default();
