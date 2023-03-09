@@ -9,7 +9,7 @@ mod dxfextract;
 use dxfextract::PolyLine;
 use eframe::{egui, glow::{FILL, BLUE}};
 use egui_extras::image::FitTo;
-use egui::Color32;
+use egui::{Color32, ScrollArea, Ui, text, FontDefinitions, Button, Align2};
 //use clap::Parser;
 
 use pyo3::prelude::*;
@@ -18,6 +18,8 @@ use dxf::Drawing;
 use svg::Document;
 use std::{collections::HashMap, f64::consts::PI, hash::Hash};
 use log::{error, info, warn};
+use egui::{Sense, Slider, Vec2};
+
 /*use line_intersection::{LineInterval, LineRelation};
 use geo::{Coordinate, Line as GeoLine, Point as GeoPoint};*/
 
@@ -94,7 +96,19 @@ pub struct SvgApp {
     checkbox_for_layer: HashMap<String, bool>,
     toggled: bool,
     last_toggled: bool,
+
+    //SLIDERS
+    //min: f64,
+    //max: f64,
+    //step: f64,
+    //use_steps: bool,
+    //integer: bool,
+    //vertical: bool,
+    //value: f64,
+    //trailing_fill: bool,
+    //scalar: f32,
 }
+
 
 impl Default for SvgApp {
     fn default() -> Self {
@@ -125,6 +139,17 @@ impl Default for SvgApp {
             checkbox_for_layer: HashMap::<String, bool>::default(),
             toggled: true,
             last_toggled: true,
+
+            //SLIDERS
+            //min: (0.0), 
+            //max: (100.0), 
+            //step: (1.0), 
+            //use_steps: (false), 
+            //integer: (false), 
+            //vertical: (false), 
+            //value: (10.0), 
+            //trailing_fill: (true),
+            //scalar:(10.0)  
         }
     }
     
@@ -134,18 +159,22 @@ impl Default for SvgApp {
 
 //start of app
 impl eframe::App for SvgApp {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, _my_frame: &mut eframe::Frame) {
         //design the frame
         let _my_frame = egui::containers::Frame {
-            inner_margin: egui::style::Margin { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 }, //margins (affects the color-border)
-            outer_margin: egui::style::Margin { left: 0.0, right: 0.0, top: 0.0, bottom: 0.0 },
+            inner_margin: egui::style::Margin { left: 10.0, right: 10.0, top: 10.0, bottom: 10.0 }, //margins (affects the color-border)
+            outer_margin: egui::style::Margin { left: 10.0, right: 10.0, top: 10.0, bottom: 10.0 },
             rounding: egui::Rounding { nw: 1.0, ne: 1.0, sw: 1.0, se: 1.0 },
             shadow: eframe::epaint::Shadow { extrusion: 1.0, color: Color32::YELLOW },
-            fill: Color32::WHITE, //background fill color, affected by the margin
-            stroke: egui::Stroke::new(2.0, Color32::GOLD),
+            fill: Color32::from_rgb(23,26,29), //background fill color, affected by the margin
+            stroke: egui::Stroke::new(2.0, Color32::BLACK),
         };
-        egui::SidePanel::right("right_panel").show(ctx, |ui|{
-            ui.heading("Useful tools (Hopefully)");
+
+        let mut fonts = FontDefinitions::default();
+
+
+        egui::SidePanel::right("right_panel").frame(_my_frame).show(ctx, |ui|{
+            ui.heading("Tools:");
             ui.set_min_size(ui.available_size());
             //ui.checkbox(&mut self.selected, "Test");
             ui.horizontal(|ui|{
@@ -210,7 +239,32 @@ impl eframe::App for SvgApp {
                 )
                 .unwrap();
                 }
+                
+                
+            
+                
             });
+
+            ui.separator();
+
+            // SLIDERS
+            let mut value = 50.0; // initialize slider value
+            let mut slider_value = value; // store slider value outside of closure
+
+            // wrap the slider in a vertical layout to move it to a new line
+            ui.vertical(|ui| {
+            ui.add(egui::Label::new("Slider 1-100"));
+            let response = ui.add(Slider::new(&mut slider_value, 0.0..=100.0).text("Slider"));
+
+            // do not update value with slider_value when slider is changed
+            if response.changed() {
+            // do nothing
+    }
+});
+
+            // assign the final slider value to value after the UI is drawn
+            value = slider_value;
+
             
             ui.separator();
             ui.checkbox(&mut self.toggled, "Toggle All On/Off");
@@ -257,7 +311,7 @@ impl eframe::App for SvgApp {
             }
             
         });
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui|{
+        egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
             ui.horizontal(|ui|{
                 ui.heading("File Selector");
                 //ui.set_min_size(ui.available_size());
@@ -265,39 +319,13 @@ impl eframe::App for SvgApp {
                     if let Some(path) = rfd::FileDialog::new().pick_file() {
                         self.picked_path = Some(path.display().to_string());
                     }
-                }
-                if ui.button("Save original as SVG (ezdxf)").clicked() {
-                    if !&self.picked_path.clone().unwrap().eq("") {
-                        match svgwrite::save_svg_ez(&self.picked_path.clone().unwrap()){
-                            Ok(_) => info!("DXF saved!"),
-                            Err(err) => panic!("Error while saving DXF: {}", err),
-                        };
-                    }
-                    
-                }
-                if ui.button("Save as SVG").clicked() {
-                    if !&self.picked_path.clone().unwrap().eq("") {
-                        svgwrite::save_svg(&self.picked_path.clone().unwrap(), &self.current_svg);
-                    }
-                    
-                }
-                if ui.button("Save as DXF (WIP)").clicked() {
-                    if !&self.picked_path.clone().unwrap().eq("") {
-                        match dxfwrite::savedxf(self.current_layers.clone(), &self.picked_path.clone().unwrap()){
-                            Ok(_) => info!("DXF saved!"),
-                            Err(err) => panic!("Error while saving DXF: {}", err),
-                        };
-                        //dxfwrite::savedxf(self.current_layers.clone(), &self.picked_path.clone().unwrap());
-                    }
-                    
-                }
-                
+                }                
                 
             });
             
             if let Some(picked_path) = &self.picked_path {
                 ui.horizontal(|ui| {
-                    ui.label("Picked file:");
+                    ui.label("Chosen file:");
                     ui.monospace(picked_path);
                 });
             }
@@ -348,13 +376,45 @@ impl eframe::App for SvgApp {
                     FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                 )
                 .unwrap();
+            ui.separator();
+
+            }
+            //SAVE BUTTONS
+            ui.horizontal(|ui| {
+            if ui.button("Save original as SVG (ezdxf)").clicked() {
+                if !&self.picked_path.clone().unwrap().eq("") {
+                    match svgwrite::save_svg_ez(&self.picked_path.clone().unwrap()){
+                        Ok(_) => info!("DXF saved!"),
+                        Err(err) => panic!("Error while saving DXF: {}", err),
+                    };
+                }
+                
+            }
+            if ui.button("Save as SVG").clicked() {
+                if !&self.picked_path.clone().unwrap().eq("") {
+                    svgwrite::save_svg(&self.picked_path.clone().unwrap(), &self.current_svg);
+                }
+                
+            }
+            if ui.button("Save as DXF (WIP)").clicked() {
+                if !&self.picked_path.clone().unwrap().eq("") {
+                    match dxfwrite::savedxf(self.current_layers.clone(), &self.picked_path.clone().unwrap()){
+                        Ok(_) => info!("DXF saved!"),
+                        Err(err) => panic!("Error while saving DXF: {}", err),
+                    };
+                    //dxfwrite::savedxf(self.current_layers.clone(), &self.picked_path.clone().unwrap());
+                }
+                
             }
         });
+
+        });
         //ui the last panel added. this one should only contain our svg if we decide to use multiple panels down the line
-        egui::CentralPanel::default().show(ctx, |ui| {
+        egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
             /*let mut size = ui.available_size();
             size.x = size.x / 1.2;
             size.y = size.y / 1.2;*/
+                        
             
             self.svg_image.show_size(ui, ui.available_size());
 
