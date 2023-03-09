@@ -214,16 +214,19 @@ fn extend_closest_lines(in_map: &HashMap<String, Vec<PolyLine>>) -> HashMap<Stri
     out_map
 }
 pub fn try_to_close_polylines(layer_polylines: &HashMap<String, Vec<PolyLine>>, max_distance: &Option<f64>, max_angle: &Option<f64>, o_iterations: &Option<i32>) -> HashMap<String, Vec<PolyLine>> {
-    let mut out = layer_polylines.clone();
-    let mut iterations;
+        let mut out = layer_polylines.clone();
+        let mut iterations;
+        let mut any_changes = true;
         if let Some(amount) = o_iterations.clone(){
             iterations = amount;
         }
         else{
             iterations = 1;
         }
-        while iterations.clone() > 0 {
+        //stops if it should not iterate more, or there were no changes in the previous iteration
+        while iterations.clone() > 0 && any_changes {
             iterations -= 1;
+            any_changes = false;
             let mut current_map = HashMap::<String, Vec<PolyLine>>::new();
             for(name, polylines) in &out{
                 let mut out_polylines = Vec::<PolyLine>::default();
@@ -238,7 +241,9 @@ pub fn try_to_close_polylines(layer_polylines: &HashMap<String, Vec<PolyLine>>, 
                             break;
                         }
                     }
+                    //this line segment has already been added to the map
                     if skip{
+                        //println!("Skipping");
                         continue;
                     }
                     if polyline.is_closed{
@@ -250,17 +255,18 @@ pub fn try_to_close_polylines(layer_polylines: &HashMap<String, Vec<PolyLine>>, 
                     let end_x = polyline.x_values.last().unwrap();
                     let end_y = polyline.y_values.last().unwrap();
                     let start_distance = distance(start_x, start_y, end_x, end_y);
-                    let mut min_distance = start_distance.clone();
+                    let mut min_distance_start = start_distance.clone();
+                    let mut min_distance_end = start_distance.clone();
                     let mut should_close = true;
                     let mut start_connection = None;
                     let mut end_connection = None;
-                    let mut current_start_x: &f64;
+                    /*let mut current_start_x: &f64;
                     let mut current_start_y: &f64;
                     let mut current_end_x: &f64;
-                    let mut current_end_y: &f64;
+                    let mut current_end_y: &f64;*/
                     let mut start_is_start = false;
                     let mut end_is_start = false;
-                    //iterates through the polylines that are left in the stack
+                    //iterates through the polylines that are left in the collection
                     for cmp_polyline in &iter{
                         if cmp_polyline.is_closed{
                             continue;
@@ -283,87 +289,86 @@ pub fn try_to_close_polylines(layer_polylines: &HashMap<String, Vec<PolyLine>>, 
                         //checks startpoint of selected polyline
                         //against startpoint of current
                         let mut cur_distance = distance(start_x, start_y, cmp_start_x, cmp_start_y);
-                        if cur_distance < min_distance{
-                            current_start_x = cmp_start_x;
-                            current_start_y = cmp_start_y;
-                            min_distance = cur_distance;
+                        if cur_distance < min_distance_start{
+                            /*current_start_x = cmp_start_x;
+                            current_start_y = cmp_start_y;*/
+                            min_distance_start = cur_distance;
                             start_connection = Some(cmp_polyline);
                             start_is_start = true;
                         }
                         //against endpoint of current
                         cur_distance = distance(start_x, start_y, cmp_end_x, cmp_end_y);
-                        if cur_distance < min_distance{
-                            current_start_x = cmp_start_x;
-                            current_start_y = cmp_start_y;
-                            min_distance = cur_distance;
+                        if cur_distance < min_distance_start{
+                            /*current_start_x = cmp_start_x;
+                            current_start_y = cmp_start_y;*/
+                            min_distance_start = cur_distance;
                             start_connection = Some(cmp_polyline);
                             start_is_start = false;
                         }
-                        min_distance = start_distance;
+                        //min_distance = start_distance;
         
                         //checks endpoint of selected polyline
                         //against startpoint of current
                         cur_distance = distance(end_x, end_y, cmp_start_x, cmp_start_y);
-                        if cur_distance < min_distance{
-                            current_end_x = cmp_start_x;
-                            current_end_y = cmp_start_y;
-                            min_distance = cur_distance;
+                        if cur_distance < min_distance_end{
+                            /*current_end_x = cmp_start_x;
+                            current_end_y = cmp_start_y;*/
+                            min_distance_end = cur_distance;
                             end_connection = Some(cmp_polyline);
                             end_is_start = true;
                         }
                         //against endpoint of current
                         cur_distance = distance(end_x, end_y, cmp_end_x, cmp_end_y);
-                        if cur_distance < min_distance{
-                            current_end_x = cmp_start_x;
-                            current_end_y = cmp_start_y;
-                            min_distance = cur_distance;
+                        if cur_distance < min_distance_end{
+                            /*current_end_x = cmp_start_x;
+                            current_end_y = cmp_start_y;*/
+                            min_distance_end = cur_distance;
                             end_connection = Some(cmp_polyline);
                             end_is_start = false;
                         }
                     }
-                    if let Some(remove) = end_connection {
-                        //skips this connection if the connector already has been used this iteration
-                        let mut skip = false;
-                        for changed in &has_changed{
-                            if remove == changed{
-                                skip = true;
-                                break;
-                            }
-                        }
-                        if skip{
-                            out_polylines.push(remove.clone());
+                    
+                    if let (Some(remove_start), Some(remove_end)) = (start_connection, end_connection) {
+                        should_close = false;
+                        if check_if_changed(remove_end, &has_changed) && check_if_changed(remove_start, &has_changed) {
+                            out_polylines.push(remove_start.clone());
+                            out_polylines.push(remove_end.clone());
                             continue;
                         }
-                        should_close = false;
-                        has_changed.push(remove.clone());
-                        if end_is_start{
-                            let mut new_x_values = polyline.x_values.clone();
-                            new_x_values.append(&mut remove.x_values.clone());
-                            let mut new_y_values = polyline.y_values.clone();
-                            new_y_values.append(&mut remove.y_values.clone());
-                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                        
+                        has_changed.push(remove_start.clone());
+                        has_changed.push(remove_end.clone());
+
+                        let mut new_x_values;
+                        let mut new_y_values;
+                        if start_is_start {
+                            new_x_values = reverse_vector(remove_start.x_values.clone());
+                            new_y_values = reverse_vector(remove_start.y_values.clone());
                         }
                         else{
-                            let mut new_x_values = polyline.x_values.clone();
-                            new_x_values.append(&mut reverse_vector(remove.x_values.clone()));
-                            let mut new_y_values = polyline.y_values.clone();
-                            new_y_values.append(&mut reverse_vector(remove.y_values.clone()));
-                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                            new_x_values = remove_start.x_values.clone();
+                            new_y_values = remove_start.y_values.clone();
                         }
+                        new_x_values.append(&mut polyline.x_values.clone());
+                        new_y_values.append(&mut polyline.y_values.clone());
+                        if end_is_start {
+                            new_x_values.append(&mut remove_end.x_values.clone());
+                            new_y_values.append(&mut remove_end.y_values.clone());
+                        }
+                        else{
+                            new_x_values.append(&mut reverse_vector(remove_end.x_values.clone()));
+                            new_y_values.append(&mut reverse_vector(remove_end.y_values.clone()));
+                        }
+                        out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
                     }
-                    if let Some(remove) = start_connection {
-                        let mut skip = false;
-                        for changed in &has_changed{
-                            if remove == changed{
-                                skip = true;
-                                break;
-                            }
-                        }
-                        if skip{
+                    
+                    else if let Some(remove) = start_connection {
+                        should_close = false;
+                        //waits for next iteration
+                        if check_if_changed(remove, &has_changed){
                             out_polylines.push(remove.clone());
                             continue;
                         }
-                        should_close = false;
                         has_changed.push(remove.clone());
                         if start_is_start{
                             let mut new_x_values = reverse_vector(polyline.x_values.clone());
@@ -376,6 +381,29 @@ pub fn try_to_close_polylines(layer_polylines: &HashMap<String, Vec<PolyLine>>, 
                             let mut new_x_values = reverse_vector(polyline.x_values.clone());
                             new_x_values.append(&mut reverse_vector(remove.x_values.clone()));
                             let mut new_y_values = reverse_vector(polyline.y_values.clone());
+                            new_y_values.append(&mut reverse_vector(remove.y_values.clone()));
+                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                        }
+                    }
+                    else if let Some(remove) = end_connection {
+                        //skips this connection if the connector already has been used this iteration
+                        should_close = false;
+                        if check_if_changed(remove, &has_changed){
+                            out_polylines.push(remove.clone());
+                            continue;
+                        }
+                        has_changed.push(remove.clone());
+                        if end_is_start{
+                            let mut new_x_values = polyline.x_values.clone();
+                            new_x_values.append(&mut remove.x_values.clone());
+                            let mut new_y_values = polyline.y_values.clone();
+                            new_y_values.append(&mut remove.y_values.clone());
+                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                        }
+                        else{
+                            let mut new_x_values = polyline.x_values.clone();
+                            new_x_values.append(&mut reverse_vector(remove.x_values.clone()));
+                            let mut new_y_values = polyline.y_values.clone();
                             new_y_values.append(&mut reverse_vector(remove.y_values.clone()));
                             out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
                         }
@@ -397,6 +425,14 @@ pub fn try_to_close_polylines(layer_polylines: &HashMap<String, Vec<PolyLine>>, 
             out = current_map;
         }
     out
+}
+fn check_if_changed(check: &PolyLine, list: &Vec<PolyLine>) -> bool {
+    for item in list {
+        if check == item {
+            return true;
+        }
+    }
+    false
 }
 pub fn calculate_min_max(layer_polylines: &HashMap<String, Vec<PolyLine>>) -> (f64, f64, f64, f64, f64){
     let all_polylines: Vec<PolyLine> = layer_polylines

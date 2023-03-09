@@ -202,6 +202,7 @@ impl eframe::App for SvgApp {
                     self.prev_layers.push(self.current_layers.clone());
                     self.current_layers = algorithms::try_to_close_polylines(&self.current_layers, &None, &None, &Some(1));
                     self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                    self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                     "test", //path of svg file to display
                     self.current_svg.to_string().as_bytes(), 
@@ -239,6 +240,7 @@ impl eframe::App for SvgApp {
                 }
                 self.prev_layers.push(self.current_layers.clone());
                 self.current_layers = temp;
+                self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                 //self.previous_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
                 //self.previous_svgs.push(self.current_svg.clone());
                 
@@ -306,6 +308,8 @@ impl eframe::App for SvgApp {
                 //self.next_dxfs = Vec::<Drawing>::new();
                 //self.previous_svgs = Vec::<svg::Document>::new();
                 //self.next_svgs = Vec::<svg::Document>::new();
+                self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                 self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
                 let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
                 let layers = dxfextract::extract_layers(&self.loaded_dxf);
