@@ -76,11 +76,11 @@ pub struct SvgApp {
     svg_image: egui_extras::RetainedImage,
     picked_path: Option<String>,
     loaded_dxf: Drawing,
-    current_dxf: Drawing,
-    previous_dxfs: Vec<Drawing>,
-    next_dxfs: Vec<Drawing>,
-    previous_svgs: Vec<svg::Document>,
-    next_svgs: Vec<svg::Document>,
+    //current_dxf: Drawing,
+    //previous_dxfs: Vec<Drawing>,
+    //next_dxfs: Vec<Drawing>,
+    //previous_svgs: Vec<svg::Document>,
+    //next_svgs: Vec<svg::Document>,
     min_x: f64,
     min_y: f64,
     max_y: f64,
@@ -89,6 +89,8 @@ pub struct SvgApp {
     current_svg: svg::Document,
     loaded_layers: HashMap<String, Vec<PolyLine>>,
     current_layers: HashMap<String, Vec<PolyLine>>,
+    prev_layers: Vec<HashMap<String, Vec<PolyLine>>>,
+    next_layers: Vec<HashMap<String, Vec<PolyLine>>>,
     checkbox_for_layer: HashMap<String, bool>,
     toggled: bool,
     last_toggled: bool,
@@ -105,11 +107,11 @@ impl Default for SvgApp {
             .unwrap(),
             picked_path: Some("".to_string()),
             loaded_dxf: Drawing::new(),
-            current_dxf: Drawing::new(),
-            previous_dxfs: Vec::<Drawing>::new(),
-            next_dxfs: Vec::<Drawing>::new(),
-            previous_svgs: Vec::<Document>::new(),
-            next_svgs: Vec::<Document>::new(),
+            //current_dxf: Drawing::new(),
+            //previous_dxfs: Vec::<Drawing>::new(),
+            //next_dxfs: Vec::<Drawing>::new(),
+            //previous_svgs: Vec::<Document>::new(),
+            //next_svgs: Vec::<Document>::new(),
             min_x: 0.0,
             min_y: 0.0,
             max_y: 0.0,
@@ -118,6 +120,8 @@ impl Default for SvgApp {
             current_svg: Document::new(),
             loaded_layers: HashMap::<String, Vec<PolyLine>>::default(),
             current_layers: HashMap::<String, Vec<PolyLine>>::default(),
+            prev_layers: Vec::<HashMap<String, Vec<PolyLine>>>::default(),
+            next_layers: Vec::<HashMap<String, Vec<PolyLine>>>::default(),
             checkbox_for_layer: HashMap::<String, bool>::default(),
             toggled: true,
             last_toggled: true,
@@ -146,43 +150,57 @@ impl eframe::App for SvgApp {
             //ui.checkbox(&mut self.selected, "Test");
             ui.horizontal(|ui|{
                 if ui.button("Undo").clicked() {
-                    self.next_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
-                    self.next_svgs.push(self.current_svg.clone());
-                    self.current_dxf = match self.previous_dxfs.pop(){
+                    //self.next_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
+                    //self.next_svgs.push(self.current_svg.clone());
+                    if let Some(prev) = self.prev_layers.pop() {
+                        self.next_layers.push(self.current_layers.clone());
+                        self.current_layers = prev;
+                        self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                        self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                            "test", //path of svg file to display
+                            self.current_svg.to_string().as_bytes(), 
+                            FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                        )
+                        .unwrap();
+                    }
+                    
+                    /*self.current_dxf = match self.previous_dxfs.pop(){
                         None => dxfextract::clone_dxf(&self.current_dxf),
                         Some(x) => x,
-                    };
-                    self.current_svg = match self.previous_svgs.pop(){
+                    };*/
+                    /*self.current_svg = match self.previous_svgs.pop(){
                         None => self.current_svg.clone(),
                         Some(x) => x,
-                    };
-                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                        "test", //path of svg file to display
-                        self.current_svg.to_string().as_bytes(), 
-                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                    )
-                    .unwrap();
+                    };*/
+                    
                 }
                 if ui.button("Redo").clicked() {
-                    self.previous_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
-                    self.previous_svgs.push(self.current_svg.clone());
-                    self.current_dxf = match self.next_dxfs.pop(){
+                    //self.previous_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
+                    //self.previous_svgs.push(self.current_svg.clone());
+                    /*self.current_dxf = match self.next_dxfs.pop(){
                         None => dxfextract::clone_dxf(&self.current_dxf),
                         Some(x) => x,
-                    };
-                    self.current_svg = match self.next_svgs.pop(){
+                    };*/
+                    /*self.current_svg = match self.next_svgs.pop(){
                         None => self.current_svg.clone(),
                         Some(x) => x,
-                    };
-                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                        "test", //path of svg file to display
-                        self.current_svg.to_string().as_bytes(), 
-                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                    )
-                    .unwrap();
+                    };*/
+                    if let Some(next) = self.next_layers.pop(){
+                        self.prev_layers.push(self.current_layers.clone());
+                        self.current_layers = next;
+                        self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                        self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                            "test", //path of svg file to display
+                            self.current_svg.to_string().as_bytes(), 
+                            FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                        )
+                        .unwrap();
+                    }
+                    
                 }
                 if ui.button("Connect").clicked(){
-                    self.current_layers = algorithms::try_to_close_polylines(&self.current_layers, &None, &None, &None);
+                    self.prev_layers.push(self.current_layers.clone());
+                    self.current_layers = algorithms::try_to_close_polylines(&self.current_layers, &None, &None, &Some(1));
                     self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                     "test", //path of svg file to display
@@ -219,12 +237,14 @@ impl eframe::App for SvgApp {
                         temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
                     }
                 }
+                self.prev_layers.push(self.current_layers.clone());
                 self.current_layers = temp;
-                self.previous_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
-                self.previous_svgs.push(self.current_svg.clone());
+                //self.previous_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
+                //self.previous_svgs.push(self.current_svg.clone());
+                
                 //TODO fix a better way to store previous files, so we can remove the first of them after a certain treshold
                 //println!("Length of DXF-vector: {}", self.previous_dxfs.len());
-                self.current_dxf = dxfextract::convert_specific_layers(&self.current_layers, &self.current_layers.keys().cloned().collect(), &self.min_x, &self.min_y);
+                //self.current_dxf = dxfextract::convert_specific_layers(&self.current_layers, &self.current_layers.keys().cloned().collect(), &self.min_x, &self.min_y);
                 self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                 self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                     "test", //path of svg file to display
@@ -282,10 +302,10 @@ impl eframe::App for SvgApp {
             
             if ui.button("Load file!").clicked() {
                 //self.selected = true;
-                self.previous_dxfs = Vec::<Drawing>::new();
-                self.next_dxfs = Vec::<Drawing>::new();
-                self.previous_svgs = Vec::<svg::Document>::new();
-                self.next_svgs = Vec::<svg::Document>::new();
+                //self.previous_dxfs = Vec::<Drawing>::new();
+                //self.next_dxfs = Vec::<Drawing>::new();
+                //self.previous_svgs = Vec::<svg::Document>::new();
+                //self.next_svgs = Vec::<svg::Document>::new();
                 self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
                 let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
                 let layers = dxfextract::extract_layers(&self.loaded_dxf);
