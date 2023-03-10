@@ -96,7 +96,9 @@ pub struct SvgApp {
     checkbox_for_layer: HashMap<String, bool>,
     toggled: bool,
     last_toggled: bool,
-
+    iterations_slider_value: i32,
+    max_angle_slider_value: i32,
+    max_distance_slider_value: i32,
     //SLIDERS
     //min: f64,
     //max: f64,
@@ -139,7 +141,9 @@ impl Default for SvgApp {
             checkbox_for_layer: HashMap::<String, bool>::default(),
             toggled: true,
             last_toggled: true,
-
+            iterations_slider_value: 1,
+            max_angle_slider_value: 360,
+            max_distance_slider_value: 100,
             //SLIDERS
             //min: (0.0), 
             //max: (100.0), 
@@ -229,7 +233,19 @@ impl eframe::App for SvgApp {
                 }
                 if ui.button("Connect").clicked(){
                     self.prev_layers.push(self.current_layers.clone());
-                    self.current_layers = algorithms::try_to_close_polylines(&self.current_layers, &None, &None, &Some(1));
+                    self.current_layers = algorithms::try_to_close_polylines_connection(&self.current_layers, &None, &None, &Some(1));
+                    self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                    self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                    "test", //path of svg file to display
+                    self.current_svg.to_string().as_bytes(), 
+                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                )
+                .unwrap();
+                }
+                if ui.button("Extend").clicked(){
+                    self.prev_layers.push(self.current_layers.clone());
+                    self.current_layers = algorithms::try_to_close_polylines_extension(&self.current_layers, &None, &None, &Some(1));
                     self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
@@ -248,22 +264,18 @@ impl eframe::App for SvgApp {
             ui.separator();
 
             // SLIDERS
-            let mut value = 50.0; // initialize slider value
-            let mut slider_value = value; // store slider value outside of closure
+            
 
             // wrap the slider in a vertical layout to move it to a new line
             ui.vertical(|ui| {
-            ui.add(egui::Label::new("Slider 1-100"));
-            let response = ui.add(Slider::new(&mut slider_value, 0.0..=100.0).text("Slider"));
-
-            // do not update value with slider_value when slider is changed
-            if response.changed() {
-            // do nothing
-    }
-});
+            //ui.add(egui::Label::new("Iterations"));
+                ui.add(Slider::new(&mut self.iterations_slider_value, 0..=100).text("Iterations (amount)"));
+                ui.add(Slider::new(&mut self.max_distance_slider_value, 0..=100).text("Max distance (%)"));
+                ui.add(Slider::new(&mut self.max_angle_slider_value, 0..=360).text("Max angle (°)"));
+            // do not update value with slider_value when slider is change
+            });
 
             // assign the final slider value to value after the UI is drawn
-            value = slider_value;
 
             
             ui.separator();
