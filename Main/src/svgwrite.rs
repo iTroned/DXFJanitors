@@ -2,7 +2,7 @@ use dxf::Drawing;
 use dxfextract::PolyLine;
 use svg::node::element as svg_element;
 use svg::Document;
-use std::{collections::HashMap, f64::consts::PI};
+use std::{collections::HashMap, f64::consts::PI, string};
 use log::{error, info, warn};
 use crate::dxfextract;
 use pyo3::{PyResult, types::{PyModule, IntoPyDict}, PyAny, Python, Py};
@@ -15,6 +15,10 @@ pub fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64,
         "http://www.inkscape.org/namespaces/inkscape",
     )
         .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
+    let line_width: f64 = (height/1000.0);
+    let mut line_width_string = line_width.to_string();
+    line_width_string.push_str("px");
+    
 
 
     // insert polylines into svg paths
@@ -49,11 +53,12 @@ pub fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64,
             if polyline.is_closed {
                 path_data = path_data.close();
             }
+            
 
             let path = svg_element::Path::new()
                 .set("fill", "none")
                 .set("stroke", color)
-                .set("stroke-width", "1px")
+                .set("stroke-width", line_width_string.as_str())
                 .set("d", path_data);
 
             group = group.add(path);
