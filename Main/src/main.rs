@@ -100,6 +100,7 @@ pub struct SvgApp {
     iterations_slider_value: i32,
     max_angle_slider_value: i32,
     max_distance_slider_value: i32,
+    merge_name: String,
     //SLIDERS
     //min: f64,
     //max: f64,
@@ -146,6 +147,7 @@ impl Default for SvgApp {
             iterations_slider_value: 1,
             max_angle_slider_value: 360,
             max_distance_slider_value: 100,
+            merge_name: String::new(),
             //SLIDERS
             //min: (0.0), 
             //max: (100.0), 
@@ -348,6 +350,53 @@ impl eframe::App for SvgApp {
                 )
                 .unwrap();
             }
+            ui.horizontal(|ui|{
+                if ui.button("Merge selected layers").clicked(){
+                    //checks wheter the name is in use or not
+                    if let None = self.loaded_layers.get(&self.merge_name){
+                        let mut full_layer = Vec::<PolyLine>::default();
+                        let mut out_map = HashMap::<String, Vec<PolyLine>>::default();
+                        for (layer_name, is_checked) in &self.checkbox_for_layer{
+                            if !is_checked {
+                                out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
+                                continue;
+                            }
+                            full_layer.append(&mut self.loaded_layers.get(layer_name).unwrap().clone());
+                        }
+    
+                        out_map.insert(self.merge_name.clone(), full_layer);
+                        self.merge_name = String::new();
+                        self.loaded_layers = out_map.clone();
+
+                        self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        //let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+                        //let layers = dxfextract::extract_layers(&self.loaded_dxf);
+                        let mut checkbox_map = HashMap::<String, bool>::default();
+                        let mut old_name_map = HashMap::<String, String>::default();
+                
+                        self.current_layers = out_map.clone();
+
+                        for layer_name in self.loaded_layers.keys() {
+                            //println!("{}", layer_name);
+                            checkbox_map.insert(layer_name.clone(), true);
+                            old_name_map.insert(layer_name.clone(), layer_name.clone());
+                        }
+                        self.checkbox_for_layer = checkbox_map;
+                        self.old_to_new_name = old_name_map;
+                        self.current_svg = svgwrite::create_svg(&out_map, &self.min_x, &self.max_y, &self.width, &self.height);
+                        self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                            "test", //path of svg file to display
+                            self.current_svg.to_string().as_bytes(), 
+                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                        )
+                        .unwrap();
+                    }
+                    
+                }
+                ui.add(egui::TextEdit::singleline(&mut self.merge_name));
+            });
+            
             
         });
         egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
