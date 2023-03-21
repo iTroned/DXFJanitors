@@ -568,10 +568,10 @@ pub fn try_to_close_polylines_connection(layer_polylines: &HashMap<String, Vec<P
                         out_polylines.push(polyline.clone());
                         continue;
                     }
-                    
                     has_changed.push(remove_start.clone());
                     has_changed.push(remove_end.clone());
-
+                    
+                    
                     let mut new_x_values;
                     let mut new_y_values;
                     if start_is_start {
@@ -584,15 +584,18 @@ pub fn try_to_close_polylines_connection(layer_polylines: &HashMap<String, Vec<P
                     }
                     new_x_values.append(&mut polyline.x_values.clone());
                     new_y_values.append(&mut polyline.y_values.clone());
-                    if end_is_start {
-                        new_x_values.append(&mut remove_end.x_values.clone());
-                        new_y_values.append(&mut remove_end.y_values.clone());
+                    let closed = remove_start == remove_end;
+                    if !closed{
+                        if end_is_start {
+                            new_x_values.append(&mut remove_end.x_values.clone());
+                            new_y_values.append(&mut remove_end.y_values.clone());
+                        }
+                        else{
+                            new_x_values.append(&mut reverse_vector(remove_end.x_values.clone()));
+                            new_y_values.append(&mut reverse_vector(remove_end.y_values.clone()));
+                        }
                     }
-                    else{
-                        new_x_values.append(&mut reverse_vector(remove_end.x_values.clone()));
-                        new_y_values.append(&mut reverse_vector(remove_end.y_values.clone()));
-                    }
-                    out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                    out_polylines.push(PolyLine::new(closed, new_x_values, new_y_values));
                 }
                 
                 else if let Some(remove) = start_connection {
@@ -648,11 +651,11 @@ pub fn try_to_close_polylines_connection(layer_polylines: &HashMap<String, Vec<P
     
                 //If the closest point is part of the same polyline
                 if should_close{
-                    polyline.is_closed = true;
+                    polyline.is_closed = polyline.x_values.len() != 2;
                     //polyline.x_values.pop();
                     //polyline.y_values.pop();
                     out_polylines.push(polyline);
-                    println!("\n closest point is part of same polyline..");
+                    //println!("\n closest point is part of same polyline..");
                     //out_polylines.push(PolyLine::new(true, polyline.x_values.clone(), polyline.y_values.clone()));
                     continue;
                 }
