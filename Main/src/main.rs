@@ -178,7 +178,7 @@ impl eframe::App for SvgApp {
             stroke: egui::Stroke::new(2.0, Color32::BLACK),
         };
 
-        let mut fonts = FontDefinitions::default();
+        //let mut fonts = FontDefinitions::default();
 
 
         egui::SidePanel::right("right_panel").frame(_my_frame).show(ctx, |ui|{

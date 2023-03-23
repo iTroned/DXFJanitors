@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use std::{collections::HashMap, f64::consts::PI, fmt};
 use log::{error, info, warn};
 use dxfe::EntityType as ET;
-use dxf::Drawing;
+//use dxf::Drawing;
 #[derive(Clone, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct PolyLine {
     pub is_closed: bool,
@@ -17,7 +17,7 @@ impl PolyLine {
     }
 }
 impl fmt::Display for PolyLine {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, fmt: &mut fmt::Formatter<'_>) -> fmt::Result {
         match fmt.write_str(&self.x_values.len().to_string()) {
             Ok(_) => info!(""),
             Err(err) => error!("Error: {}", err)
@@ -268,7 +268,8 @@ pub fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
 
     layers
 }
-pub fn convert_specific_layers(layers: &HashMap<String, Vec<PolyLine>>, layer_names: &Vec<String>, min_x: &f64, min_y: &f64) -> Drawing{
+//all this became unused, as ezdxf in python does all the job
+/*pub fn convert_specific_layers(layers: &HashMap<String, Vec<PolyLine>>, layer_names: &Vec<String>, min_x: &f64, min_y: &f64) -> Drawing{
     let mut out_file = Drawing::new();
     for name in layer_names {
         add_layer_to_file(&mut out_file, &layers.get(name).unwrap(), &name, min_x, min_y)
@@ -278,9 +279,6 @@ pub fn convert_specific_layers(layers: &HashMap<String, Vec<PolyLine>>, layer_na
 fn connect_layers(layers: &HashMap<String, Vec<PolyLine>>, min_x: &f64, min_y: &f64) -> Drawing{
     convert_specific_layers(layers,  &layers.keys().cloned().collect(), min_x, min_y)
 }
-
-
-
 
 fn add_layer_to_file(dxf_file: &mut dxf::Drawing, layer: &Vec<PolyLine>, layer_name: &String, min_x: &f64, min_y: &f64){
     //println!("Starting layer {}", layer.name);
@@ -349,4 +347,4 @@ pub fn clone_dxf(in_file: &Drawing) -> Drawing {
         add_layer_to_file_no_extras(&mut out_file, &layer.into_polylines(), &name);
     }
     out_file
-}
+}*/

@@ -415,15 +415,22 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
                         remove_x_values = reverse_vector(remove_x_values);
                         remove_y_values = reverse_vector(remove_y_values);
                     }
+
                     if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
                         interception = found_point;
                     }
                     //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
                     new_x_values.push(interception.x);
-                    new_x_values.push(interception.y);
-                    new_x_values.append(&mut remove_x_values);
-                    new_y_values.append(&mut remove_y_values);
-                    out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                    new_y_values.push(interception.y);
+                    let closed = remove_start == remove_end;
+                    if !closed {
+                        new_x_values.append(&mut remove_x_values);
+                        new_y_values.append(&mut remove_y_values);
+                    }
+                    
+                    
+                    //println!("Case1 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
+                    out_polylines.push(PolyLine::new(closed, new_x_values, new_y_values));
                 }
                 
                 else if let Some(remove) = start_connection {
@@ -466,6 +473,7 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
                     new_y_values.push(interception.y);
                     new_x_values.append(&mut reverse_vector(polyline_values_x));
                     new_y_values.append(&mut reverse_vector(polyline_values_y));
+                    //println!("Case2 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
                     out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
                 }
                 else if let Some(remove) = end_connection {
@@ -509,9 +517,10 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
                     }
                     //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
                     new_x_values.push(interception.x);
-                    new_x_values.push(interception.y);
+                    new_y_values.push(interception.y);
                     new_x_values.append(&mut remove_x_values);
                     new_y_values.append(&mut remove_y_values);
+                    //println!("Case3 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
                     out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
                 }
     
@@ -664,6 +673,7 @@ pub fn try_to_close_polylines_connection(layer_polylines: &HashMap<String, Vec<P
                     }
                     new_x_values.append(&mut polyline.x_values.clone());
                     new_y_values.append(&mut polyline.y_values.clone());
+                    
                     let closed = remove_start == remove_end;
                     if !closed{
                         if end_is_start {
