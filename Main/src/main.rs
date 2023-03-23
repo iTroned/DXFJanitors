@@ -245,7 +245,7 @@ impl eframe::App for SvgApp {
                 }
                 if ui.button("Connect").clicked(){
                     self.prev_layers.push(self.current_layers.clone());
-                    self.current_layers = algorithms::try_to_close_polylines_connection(&self.current_layers, &None, &None, &Some(1));
+                    self.current_layers = algorithms::try_to_close_polylines_connection(&self.current_layers, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
@@ -261,7 +261,7 @@ impl eframe::App for SvgApp {
                 }
                 if ui.button("Extend").clicked(){
                     self.prev_layers.push(self.current_layers.clone());
-                    self.current_layers = algorithms::try_to_close_polylines_extension(&self.current_layers, &None, &None, &Some(1));
+                    self.current_layers = algorithms::try_to_close_polylines_extension(&self.current_layers, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
@@ -286,9 +286,9 @@ impl eframe::App for SvgApp {
             // wrap the slider in a vertical layout to move it to a new line
             ui.vertical(|ui| {
             //ui.add(egui::Label::new("Iterations"));
-                ui.add(Slider::new(&mut self.iterations_slider_value, 0..=100).text("Iterations (amount)"));
-                ui.add(Slider::new(&mut self.max_distance_slider_value, 0..=100).text("Max distance (%)"));
-                ui.add(Slider::new(&mut self.max_angle_slider_value, 0..=360).text("Max angle (°)"));
+                ui.add(Slider::new(&mut self.iterations_slider_value, 1..=10).text("Iterations (amount)"));
+                ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=100).text("Max distance (%)"));
+                ui.add(Slider::new(&mut self.max_angle_slider_value, 1..=360).text("Max angle (°)"));
             // do not update value with slider_value when slider is change
             });
 

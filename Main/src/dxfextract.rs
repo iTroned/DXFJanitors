@@ -1,7 +1,7 @@
 const NUM_SEGMENTS: usize = 16;
 use dxf::{entities::{self as dxfe}};
 use serde::{Serialize, Deserialize};
-use std::{collections::HashMap, f64::consts::PI};
+use std::{collections::HashMap, f64::consts::PI, fmt};
 use log::{error, info, warn};
 use dxfe::EntityType as ET;
 use dxf::Drawing;
@@ -14,6 +14,15 @@ pub struct PolyLine {
 impl PolyLine {
     pub fn new(is_closed: bool, x_values: Vec<f64>, y_values: Vec<f64>) -> Self {
         Self {is_closed, x_values, y_values}
+    }
+}
+impl fmt::Display for PolyLine {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        match fmt.write_str(&self.x_values.len().to_string()) {
+            Ok(_) => info!(""),
+            Err(err) => error!("Error: {}", err)
+        };
+        Ok(())
     }
 }
 impl From<dxfe::Line> for PolyLine {
