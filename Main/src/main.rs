@@ -509,6 +509,11 @@ impl eframe::App for SvgApp {
                         //get extension to see if we want to update display
                         let extension = path.extension().unwrap();
                         if extension == "dxf"{
+                            //self.selected = true;
+                            //self.previous_dxfs = Vec::<Drawing>::new();
+                            //self.next_dxfs = Vec::<Drawing>::new();
+                            //self.previous_svgs = Vec::<svg::Document>::new();
+                            //self.next_svgs = Vec::<svg::Document>::new();
                             self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                             self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                             self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
@@ -540,6 +545,11 @@ impl eframe::App for SvgApp {
                             self.max_y = result.2;
                             self.width = result.3;
                             self.height = result.4;
+
+                            //self.current_dxf = alter_dxf(&self.loaded_dxf);
+                            //layers = extract_layers(&self.current_dxf);
+                            //Colors to use when creating svg.. The last one is used first
+                            //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
 
 
                             self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
