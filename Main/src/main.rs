@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 //use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point, Drawing};
 use dxf::Drawing;
 use svg::Document;
-use std::{collections::HashMap, f64::consts::PI, hash::Hash, /*default::default*/};
+use std::{collections::HashMap, f64::consts::PI, hash::Hash, ffi::OsStr, /*default::default*/};
 use log::{error, info, warn};
 use egui::{Sense, Slider, Vec2};
 
@@ -569,35 +569,44 @@ impl eframe::App for SvgApp {
             }
             //SAVE BUTTONS
             ui.horizontal(|ui| {
-            if ui.button("Save original as SVG (ezdxf)").clicked() {
+            if ui.button("Save as").clicked() {
                 if !&self.picked_path.clone().unwrap().eq("") {
-                    match svgwrite::save_svg_ez(&self.picked_path.clone().unwrap()){
-                        Ok(_) => info!("DXF saved!"),
-                        Err(err) => panic!("Error while saving DXF: {}", err),
-                    };
-                }
-                
-            }
-            if ui.button("Save as SVG").clicked() {
-                if !&self.picked_path.clone().unwrap().eq("") {
-                    svgwrite::save_svg(&self.picked_path.clone().unwrap(), &self.current_svg);
-                }
-                
-            }
-            if ui.button("Save as DXF (WIP)").clicked() {
-                if !&self.picked_path.clone().unwrap().eq("") {
-                    let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
-                    for (layer_name, polylines) in &self.current_layers{
-                        out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                    let res = rfd::FileDialog::new().set_file_name("file_name").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
+                    //println!("{:#?}", res.unwrap().extension());
+                    let extension = res.unwrap();
+                    let filetype = extension.extension().unwrap();
+                    let filepath = extension.as_path();
+                    println!("{:#?}", filetype);
+
+                    
+                    //save dxf
+                    if filetype == "dxf"{
+                        let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                        for (layer_name, polylines) in &self.current_layers{
+                            out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                        }
+                        match dxfwrite::savedxf(out_layers, &self.picked_path.clone().unwrap()){
+                            Ok(_) => info!("DXF saved!"),
+                            Err(err) => panic!("Error while saving DXF: {}", err),
+                        };
                     }
-                    match dxfwrite::savedxf(out_layers, &self.picked_path.clone().unwrap()){
-                        Ok(_) => info!("DXF saved!"),
-                        Err(err) => panic!("Error while saving DXF: {}", err),
-                    };
-                    //dxfwrite::savedxf(self.current_layers.clone(), &self.picked_path.clone().unwrap());
+                    //save svg
+                    else if filetype == "svg"{
+                        svgwrite::save_svg(&self.picked_path.clone().unwrap(), &self.current_svg);
+                    }
+                    //pop-up message error
+                    else{
+                        let msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
+                        println!("{}", msg);
+                    }
+                    
+
+
+
                 }
                 
             }
+            
         });
 
         });
