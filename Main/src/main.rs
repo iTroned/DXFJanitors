@@ -498,7 +498,7 @@ impl eframe::App for SvgApp {
                 ui.heading("File Selector");
                 //ui.set_min_size(ui.available_size());
                 if ui.button("Open file…").clicked() {
-                    if let Some(path) = rfd::FileDialog::new().pick_file() {
+                    if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
                         self.picked_path = Some(path.display().to_string());
                         
                         //get extension to see if we want to update display
