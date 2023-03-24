@@ -210,32 +210,35 @@ impl eframe::App for SvgApp {
                 if !&self.picked_path.clone().unwrap().eq("") {
                     let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
                     
-                    let extension = res.unwrap();
-                    let filetype = extension.extension().unwrap(); //get extension
-                    let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
+                    if let Some(extension) = res{
+                        let filetype = extension.extension().unwrap(); //get extension
+                        let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
+
+                        //save dxf
+                        if filetype == "dxf"{
+                            let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                            for (layer_name, polylines) in &self.current_layers{
+                                out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                            }
+                            match dxfwrite::savedxf(out_layers, &filepath){
+                                Ok(_) => info!("DXF saved!"),
+                                Err(err) => panic!("Error while saving DXF: {}", err),
+                            };
+                        }
+                        //save svg
+                        else if filetype == "svg"{
+                            svgwrite::save_svg(&filepath, &self.current_svg);
+                        }
+                        //pop-up message error
+                        else{
+                            let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
+                        
+                        }
+                    }
                     
 
                     
-                    //save dxf
-                    if filetype == "dxf"{
-                        let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
-                        for (layer_name, polylines) in &self.current_layers{
-                            out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
-                        }
-                        match dxfwrite::savedxf(out_layers, &filepath){
-                            Ok(_) => info!("DXF saved!"),
-                            Err(err) => panic!("Error while saving DXF: {}", err),
-                        };
-                    }
-                    //save svg
-                    else if filetype == "svg"{
-                        svgwrite::save_svg(&filepath, &self.current_svg);
-                    }
-                    //pop-up message error
-                    else{
-                        let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
-                        
-                    }
+                    
                 }
             }
             /*for key in &self.pressed_keys {
