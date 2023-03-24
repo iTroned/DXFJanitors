@@ -596,7 +596,7 @@ impl eframe::App for SvgApp {
                     }
                     //pop-up message error
                     else{
-                        let msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
+                        let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
                         
                     }
                     
