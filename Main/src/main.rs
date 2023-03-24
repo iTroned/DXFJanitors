@@ -572,11 +572,11 @@ impl eframe::App for SvgApp {
             if ui.button("Save as").clicked() {
                 if !&self.picked_path.clone().unwrap().eq("") {
                     let res = rfd::FileDialog::new().set_file_name("file_name").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
-                    //println!("{:#?}", res.unwrap().extension());
+                    
                     let extension = res.unwrap();
-                    let filetype = extension.extension().unwrap();
-                    let filepath = extension.as_path();
-                    println!("{:#?}", filetype);
+                    let filetype = extension.extension().unwrap(); //get extension
+                    let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
+                    
 
                     
                     //save dxf
@@ -585,19 +585,19 @@ impl eframe::App for SvgApp {
                         for (layer_name, polylines) in &self.current_layers{
                             out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
                         }
-                        match dxfwrite::savedxf(out_layers, &self.picked_path.clone().unwrap()){
+                        match dxfwrite::savedxf(out_layers, &filepath){
                             Ok(_) => info!("DXF saved!"),
                             Err(err) => panic!("Error while saving DXF: {}", err),
                         };
                     }
                     //save svg
                     else if filetype == "svg"{
-                        svgwrite::save_svg(&self.picked_path.clone().unwrap(), &self.current_svg);
+                        svgwrite::save_svg(&filepath, &self.current_svg);
                     }
                     //pop-up message error
                     else{
                         let msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
-                        println!("{}", msg);
+                        
                     }
                     
 
