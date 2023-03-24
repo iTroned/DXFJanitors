@@ -71,13 +71,13 @@ pub fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64,
     document
 }
 pub fn save_svg(path: &String, file: &Document){
-    match svg::save(path.clone().replace('.', "_").replace(' ', "_") + "_export.svg", file) {
+    match svg::save(path.clone() /* .replace('.', "_").replace(' ', "_") + ".svg"*/, file) {
         Ok(_) => info!("Created file: {}", path),
         Err(err) => panic!("Error: {}", err),
     };
 }
 pub fn save_svg_ez(path: &String) -> PyResult<()>{
-    let out_path = path.clone().replace('.', "_").replace(' ', "_") + "_export.svg";
+    let out_path = path.clone().replace('.', "_").replace(' ', "_") + ".svg";
     Python::with_gil(|py| {
         let fun: Py<PyAny> = PyModule::from_code(
             py,

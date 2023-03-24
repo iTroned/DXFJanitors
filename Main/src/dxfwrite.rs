@@ -7,7 +7,7 @@ use crate::dxfextract::PolyLine;
 
 pub fn savedxf(map: HashMap<String, Vec<PolyLine>>, path: &String) -> PyResult<()> {
     let serialized = serde_json::to_string(&map).unwrap();
-    let out_path = path.clone().replace('.', "_").replace(' ', "_") + "_export.dxf";
+    let out_path = path.clone()/* .replace('.', "_").replace(' ', "_") + ".dxf"*/;
     Python::with_gil(|py| {
         let fun: Py<PyAny> = PyModule::from_code(
             py,

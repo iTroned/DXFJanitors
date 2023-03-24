@@ -189,80 +189,11 @@ impl eframe::App for SvgApp {
                     egui::Event::Key{key, pressed, modifiers: _, repeat: _ } => {
                         //println!("{:?} = {:?}", key, pressed);
                         if pressed {
-                            match key {
-                                egui::Key::ArrowDown => todo!(),
-                                egui::Key::ArrowLeft => todo!(),
-                                egui::Key::ArrowRight => todo!(),
-                                egui::Key::ArrowUp => todo!(),
-                                egui::Key::Escape => todo!(),
-                                egui::Key::Tab => todo!(),
-                                egui::Key::Backspace => todo!(),
-                                egui::Key::Enter => todo!(),
-                                egui::Key::Space => todo!(),
-                                egui::Key::Insert => todo!(),
-                                egui::Key::Delete => todo!(),
-                                egui::Key::Home => todo!(),
-                                egui::Key::End => todo!(),
-                                egui::Key::PageUp => todo!(),
-                                egui::Key::PageDown => todo!(),
-                                egui::Key::Minus => todo!(),
-                                egui::Key::PlusEquals => todo!(),
-                                egui::Key::Num0 => todo!(),
-                                egui::Key::Num1 => todo!(),
-                                egui::Key::Num2 => todo!(),
-                                egui::Key::Num3 => todo!(),
-                                egui::Key::Num4 => todo!(),
-                                egui::Key::Num5 => todo!(),
-                                egui::Key::Num6 => todo!(),
-                                egui::Key::Num7 => todo!(),
-                                egui::Key::Num8 => todo!(),
-                                egui::Key::Num9 => todo!(),
-                                egui::Key::A => todo!(),
-                                egui::Key::B => todo!(),
-                                egui::Key::C => todo!(),
-                                egui::Key::D => todo!(),
-                                egui::Key::E => todo!(),
-                                egui::Key::F => todo!(),
-                                egui::Key::G => todo!(),
-                                egui::Key::H => todo!(),
-                                egui::Key::I => todo!(),
-                                egui::Key::J => todo!(),
-                                egui::Key::K => todo!(),
-                                egui::Key::L => todo!(),
-                                egui::Key::M => todo!(),
-                                egui::Key::N => todo!(),
-                                egui::Key::O => todo!(),
-                                egui::Key::P => todo!(),
-                                egui::Key::Q => todo!(),
-                                egui::Key::R => todo!(),
-                                egui::Key::S => todo!(),
-                                egui::Key::T => todo!(),
-                                egui::Key::U => todo!(),
-                                egui::Key::V => todo!(),
-                                egui::Key::W => todo!(),
-                                egui::Key::X => todo!(),
-                                egui::Key::Y => todo!(),
-                                egui::Key::Z => todo!(),
-                                egui::Key::F1 => todo!(),
-                                egui::Key::F2 => todo!(),
-                                egui::Key::F3 => todo!(),
-                                egui::Key::F4 => todo!(),
-                                egui::Key::F5 => todo!(),
-                                egui::Key::F6 => todo!(),
-                                egui::Key::F7 => todo!(),
-                                egui::Key::F8 => todo!(),
-                                egui::Key::F9 => todo!(),
-                                egui::Key::F10 => todo!(),
-                                egui::Key::F11 => todo!(),
-                                egui::Key::F12 => todo!(),
-                                egui::Key::F13 => todo!(),
-                                egui::Key::F14 => todo!(),
-                                egui::Key::F15 => todo!(),
-                                egui::Key::F16 => todo!(),
-                                egui::Key::F17 => todo!(),
-                                egui::Key::F18 => todo!(),
-                                egui::Key::F19 => todo!(),
-                                egui::Key::F20 => todo!(),
+                            self.pressed_keys.insert(key);
+                        }
+                        else{
+                            if self.pressed_keys.contains(&key){
+                                self.pressed_keys.remove(&key);
                             }
                         }
                         
@@ -270,9 +201,46 @@ impl eframe::App for SvgApp {
                     egui::Event::Text(t) => { /*println!("Text = {:?}", t)*/ } _ => {}
                 }
             }
-            for key in &self.pressed_keys {
-                println!("{:?}", key);
+            if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::N){
+                if let Some(path) = rfd::FileDialog::new().pick_file() {
+                    self.picked_path = Some(path.display().to_string());
+                }
             }
+            else if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::S){
+                if !&self.picked_path.clone().unwrap().eq("") {
+                    let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
+                    
+                    let extension = res.unwrap();
+                    let filetype = extension.extension().unwrap(); //get extension
+                    let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
+                    
+
+                    
+                    //save dxf
+                    if filetype == "dxf"{
+                        let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                        for (layer_name, polylines) in &self.current_layers{
+                            out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                        }
+                        match dxfwrite::savedxf(out_layers, &filepath){
+                            Ok(_) => info!("DXF saved!"),
+                            Err(err) => panic!("Error while saving DXF: {}", err),
+                        };
+                    }
+                    //save svg
+                    else if filetype == "svg"{
+                        svgwrite::save_svg(&filepath, &self.current_svg);
+                    }
+                    //pop-up message error
+                    else{
+                        let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
+                        
+                    }
+                }
+            }
+            /*for key in &self.pressed_keys {
+                println!("{:?}", key);
+            }*/
         });
         
 
@@ -292,9 +260,9 @@ impl eframe::App for SvgApp {
                         self.next_layers.push(self.current_layers.clone());
                         self.current_layers = prev;
                         let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
-                    for (layer_name, polylines) in &self.current_layers{
-                        out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
-                    }
+                        for (layer_name, polylines) in &self.current_layers{
+                            out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                        }
                         self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                         self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                             "test", //path of svg file to display
@@ -387,7 +355,7 @@ impl eframe::App for SvgApp {
             //ui.add(egui::Label::new("Iterations"));
                 ui.add(Slider::new(&mut self.iterations_slider_value, 1..=10).text("Iterations (amount)"));
                 ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=100).text("Max distance (%)"));
-                ui.add(Slider::new(&mut self.max_angle_slider_value, 1..=360).text("Max angle (°)"));
+                ui.add(Slider::new(&mut self.max_angle_slider_value, 1..=180).text("Max angle (°)"));
             // do not update value with slider_value when slider is change
             });
 
@@ -454,31 +422,34 @@ impl eframe::App for SvgApp {
                 .unwrap();
             }
             ui.horizontal(|ui|{
-                if ui.button("Merge selected layers").clicked(){
+                if ui.button("Merge into new layer").clicked(){
                     //checks wheter the name is in use or not
                     if let None = self.loaded_layers.get(&self.merge_name){
                         let mut full_layer = Vec::<PolyLine>::default();
-                        let mut out_map = HashMap::<String, Vec<PolyLine>>::default();
+                        //let mut out_map = HashMap::<String, Vec<PolyLine>>::default();
                         for (layer_name, is_checked) in &self.checkbox_for_layer{
                             if !is_checked {
-                                out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
+                                //out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
                                 continue;
                             }
                             full_layer.append(&mut self.loaded_layers.get(layer_name).unwrap().clone());
                         }
     
-                        out_map.insert(self.merge_name.clone(), full_layer);
+                        //out_map.insert(self.merge_name.clone(), full_layer);
+                        self.loaded_layers.insert(self.merge_name.clone(), full_layer);
+                        self.checkbox_for_layer.insert(self.merge_name.clone(), false);
+                        self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
                         self.merge_name = String::new();
-                        self.loaded_layers = out_map.clone();
+                        //self.loaded_layers = out_map.clone();
 
-                        self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
-                        self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        //self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        //self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                         //let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
                         //let layers = dxfextract::extract_layers(&self.loaded_dxf);
-                        let mut checkbox_map = HashMap::<String, bool>::default();
-                        let mut old_name_map = HashMap::<String, String>::default();
+                        //let mut checkbox_map = HashMap::<String, bool>::default();
+                        //let mut old_name_map = HashMap::<String, String>::default();
                 
-                        self.current_layers = out_map.clone();
+                        /*self.current_layers = out_map.clone();
 
                         for layer_name in self.loaded_layers.keys() {
                             //println!("{}", layer_name);
@@ -493,7 +464,7 @@ impl eframe::App for SvgApp {
                             self.current_svg.to_string().as_bytes(), 
                         FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                         )
-                        .unwrap();
+                        .unwrap();*/
                     }
                     
                 }
@@ -583,9 +554,9 @@ impl eframe::App for SvgApp {
             
             //SAVE BUTTONS
             ui.horizontal(|ui| {
-            if ui.button("Save as").clicked() {
+            if ui.button("Save").clicked() {
                 if !&self.picked_path.clone().unwrap().eq("") {
-                    let res = rfd::FileDialog::new().set_file_name("file_name").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
+                    let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
                     
                     let extension = res.unwrap();
                     let filetype = extension.extension().unwrap(); //get extension
