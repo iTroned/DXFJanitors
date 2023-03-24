@@ -399,27 +399,31 @@ impl eframe::App for SvgApp {
             ui.separator();
             let mut checkboxes = HashMap::<String, bool>::default();
             let mut new_layer_names = HashMap::<String, String>::default();
-            for layer_name in self.loaded_layers.keys() {
-                let mut checkval = self.checkbox_for_layer.get(layer_name).unwrap().clone();
-                let mut new_name = self.old_to_new_name.get(layer_name).unwrap().clone();
-                ui.horizontal(|ui|{
-                    ui.checkbox(&mut checkval, "");
-                    ui.add(egui::TextEdit::singleline(&mut new_name));
-                });
-                checkboxes.insert(layer_name.clone(), checkval);
-                new_layer_names.insert(layer_name.clone(), new_name);
-            }
-            self.checkbox_for_layer = checkboxes;
-            self.old_to_new_name = new_layer_names;
-            
-            //code for toggle on/off for all layers
-            if self.toggled != self.last_toggled {
-                let mut checkboxes = HashMap::<String, bool>::default();
+            egui::ScrollArea::vertical().show(ui, |ui|{
                 for layer_name in self.loaded_layers.keys() {
-                    checkboxes.insert(layer_name.clone(), self.toggled);
+                    let mut checkval = self.checkbox_for_layer.get(layer_name).unwrap().clone();
+                    let mut new_name = self.old_to_new_name.get(layer_name).unwrap().clone();
+                    ui.horizontal(|ui|{
+                        ui.checkbox(&mut checkval, "");
+                        ui.add(egui::TextEdit::singleline(&mut new_name));
+                    });
+                    checkboxes.insert(layer_name.clone(), checkval);
+                    new_layer_names.insert(layer_name.clone(), new_name);
                 }
                 self.checkbox_for_layer = checkboxes;
-            }
+                self.old_to_new_name = new_layer_names;
+
+                //code for toggle on/off for all layers
+                if self.toggled != self.last_toggled {
+                    let mut checkboxes = HashMap::<String, bool>::default();
+                    for layer_name in self.loaded_layers.keys() {
+                        checkboxes.insert(layer_name.clone(), self.toggled);
+                    }
+                    self.checkbox_for_layer = checkboxes;
+                }
+                self.last_toggled = self.toggled;
+            });
+            
             self.last_toggled = self.toggled;
             if ui.button("Rebuild svg").clicked() {
                 let mut temp = HashMap::<String, Vec<PolyLine>>::default();
