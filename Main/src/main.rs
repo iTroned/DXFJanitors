@@ -7,7 +7,7 @@ use algorithms::{CustomPoint, PointWithNeighbour};
 mod svgwrite;
 mod dxfextract;
 use dxfextract::PolyLine;
-use eframe::{egui, glow::{FILL, BLUE}};
+use eframe::{egui, glow::{FILL, BLUE}, epaint::ahash::HashSet};
 use egui_extras::image::FitTo;
 use egui::{Color32, ScrollArea, Ui, text, FontDefinitions, Button, Align2};
 //use clap::Parser;
@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 //use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point, Drawing};
 use dxf::Drawing;
 use svg::Document;
-use std::{collections::HashMap, f64::consts::PI, hash::Hash};
+use std::{collections::HashMap, f64::consts::PI, hash::Hash, /*default::default*/};
 use log::{error, info, warn};
 use egui::{Sense, Slider, Vec2};
 
@@ -101,6 +101,7 @@ pub struct SvgApp {
     max_angle_slider_value: i32,
     max_distance_slider_value: i32,
     merge_name: String,
+    pressed_keys: HashSet<egui::Key>,
     //SLIDERS
     //min: f64,
     //max: f64,
@@ -148,6 +149,7 @@ impl Default for SvgApp {
             max_angle_slider_value: 360,
             max_distance_slider_value: 100,
             merge_name: String::new(),
+            pressed_keys: HashSet::<egui::Key>::default(),
             //SLIDERS
             //min: (0.0), 
             //max: (100.0), 
@@ -179,11 +181,108 @@ impl eframe::App for SvgApp {
         };
 
         //let mut fonts = FontDefinitions::default();
-
+        //key handler
+        ctx.input(|i| {
+            //let mut new_set = HashSet::<egui::Key>::default();
+            for event in i.events.clone() {
+                match event {
+                    egui::Event::Key{key, pressed, modifiers: _, repeat: _ } => {
+                        //println!("{:?} = {:?}", key, pressed);
+                        if pressed {
+                            match key {
+                                egui::Key::ArrowDown => todo!(),
+                                egui::Key::ArrowLeft => todo!(),
+                                egui::Key::ArrowRight => todo!(),
+                                egui::Key::ArrowUp => todo!(),
+                                egui::Key::Escape => todo!(),
+                                egui::Key::Tab => todo!(),
+                                egui::Key::Backspace => todo!(),
+                                egui::Key::Enter => todo!(),
+                                egui::Key::Space => todo!(),
+                                egui::Key::Insert => todo!(),
+                                egui::Key::Delete => todo!(),
+                                egui::Key::Home => todo!(),
+                                egui::Key::End => todo!(),
+                                egui::Key::PageUp => todo!(),
+                                egui::Key::PageDown => todo!(),
+                                egui::Key::Minus => todo!(),
+                                egui::Key::PlusEquals => todo!(),
+                                egui::Key::Num0 => todo!(),
+                                egui::Key::Num1 => todo!(),
+                                egui::Key::Num2 => todo!(),
+                                egui::Key::Num3 => todo!(),
+                                egui::Key::Num4 => todo!(),
+                                egui::Key::Num5 => todo!(),
+                                egui::Key::Num6 => todo!(),
+                                egui::Key::Num7 => todo!(),
+                                egui::Key::Num8 => todo!(),
+                                egui::Key::Num9 => todo!(),
+                                egui::Key::A => todo!(),
+                                egui::Key::B => todo!(),
+                                egui::Key::C => todo!(),
+                                egui::Key::D => todo!(),
+                                egui::Key::E => todo!(),
+                                egui::Key::F => todo!(),
+                                egui::Key::G => todo!(),
+                                egui::Key::H => todo!(),
+                                egui::Key::I => todo!(),
+                                egui::Key::J => todo!(),
+                                egui::Key::K => todo!(),
+                                egui::Key::L => todo!(),
+                                egui::Key::M => todo!(),
+                                egui::Key::N => todo!(),
+                                egui::Key::O => todo!(),
+                                egui::Key::P => todo!(),
+                                egui::Key::Q => todo!(),
+                                egui::Key::R => todo!(),
+                                egui::Key::S => todo!(),
+                                egui::Key::T => todo!(),
+                                egui::Key::U => todo!(),
+                                egui::Key::V => todo!(),
+                                egui::Key::W => todo!(),
+                                egui::Key::X => todo!(),
+                                egui::Key::Y => todo!(),
+                                egui::Key::Z => todo!(),
+                                egui::Key::F1 => todo!(),
+                                egui::Key::F2 => todo!(),
+                                egui::Key::F3 => todo!(),
+                                egui::Key::F4 => todo!(),
+                                egui::Key::F5 => todo!(),
+                                egui::Key::F6 => todo!(),
+                                egui::Key::F7 => todo!(),
+                                egui::Key::F8 => todo!(),
+                                egui::Key::F9 => todo!(),
+                                egui::Key::F10 => todo!(),
+                                egui::Key::F11 => todo!(),
+                                egui::Key::F12 => todo!(),
+                                egui::Key::F13 => todo!(),
+                                egui::Key::F14 => todo!(),
+                                egui::Key::F15 => todo!(),
+                                egui::Key::F16 => todo!(),
+                                egui::Key::F17 => todo!(),
+                                egui::Key::F18 => todo!(),
+                                egui::Key::F19 => todo!(),
+                                egui::Key::F20 => todo!(),
+                            }
+                        }
+                        
+                    },
+                    egui::Event::Text(t) => { /*println!("Text = {:?}", t)*/ } _ => {}
+                }
+            }
+            for key in &self.pressed_keys {
+                println!("{:?}", key);
+            }
+        });
+        
 
         egui::SidePanel::right("right_panel").frame(_my_frame).show(ctx, |ui|{
             ui.heading("Tools:");
             ui.set_min_size(ui.available_size());
+            
+
+
+
             //ui.checkbox(&mut self.selected, "Test");
             ui.horizontal(|ui|{
                 if ui.button("Undo").clicked() {
