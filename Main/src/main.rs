@@ -391,9 +391,11 @@ impl eframe::App for SvgApp {
                     });
                     checkboxes.insert(layer_name.clone(), checkval);
                     new_layer_names.insert(layer_name.clone(), new_name);
+                    ui.separator();
                 }
                 self.checkbox_for_layer = checkboxes;
                 self.old_to_new_name = new_layer_names;
+                
 
                 //code for toggle on/off for all layers
                 if self.toggled != self.last_toggled {
@@ -404,6 +406,7 @@ impl eframe::App for SvgApp {
                     self.checkbox_for_layer = checkboxes;
                 }
                 self.last_toggled = self.toggled;
+                
             });
             
             self.last_toggled = self.toggled;
