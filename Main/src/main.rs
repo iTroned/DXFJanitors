@@ -312,7 +312,15 @@ impl eframe::App for SvgApp {
                 }
                 if ui.button("Connect").clicked(){
                     self.prev_layers.push(self.current_layers.clone());
-                    self.current_layers = algorithms::try_to_close_polylines_connection(&self.current_layers, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                    for (name, checked) in &self.checkbox_for_layer {
+                        if checked.clone(){
+                            temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
+                        }
+                    }
+                    self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    
+                    
                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
@@ -328,7 +336,13 @@ impl eframe::App for SvgApp {
                 }
                 if ui.button("Extend").clicked(){
                     self.prev_layers.push(self.current_layers.clone());
-                    self.current_layers = algorithms::try_to_close_polylines_extension(&self.current_layers, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                    for (name, checked) in &self.checkbox_for_layer {
+                        if checked.clone(){
+                            temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
+                        }
+                    }
+                    self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());

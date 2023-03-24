@@ -248,8 +248,8 @@ fn angle_three_points(a: (f64, f64), b: (f64, f64), c: (f64, f64)) -> f64{
     }
     out_map
 }*/
-pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>, max_angle_in: &Option<i32>, o_iterations: &Option<i32>) -> HashMap<String, Vec<PolyLine>> {
-    let mut out = layer_polylines.clone();
+pub fn try_to_close_polylines(extend: bool, all_layers: &HashMap<String, Vec<PolyLine>>, affected_layers: &HashMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>, max_angle_in: &Option<i32>, o_iterations: &Option<i32>) -> HashMap<String, Vec<PolyLine>> {
+    let mut out = all_layers.clone();
     let mut iterations;
     let mut done_iterations = 0;
     let mut any_changes = true;
@@ -280,6 +280,9 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
         any_changes = false;
         let mut current_map = HashMap::<String, Vec<PolyLine>>::new();
         for(name, polylines) in &out{
+            if !affected_layers.contains_key(name){
+                continue;
+            }
             let mut out_polylines = Vec::<PolyLine>::default();
             let mut iter = polylines.clone();
             let mut has_changed = Vec::<PolyLine>::default();
@@ -366,71 +369,100 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
                     
                     has_changed.push(remove_start.clone());
                     has_changed.push(remove_end.clone());
-
-                    let mut last_point_1;
-                    let mut last_point_2;
-                    let mut second_last_point_1;
-                    let mut second_last_point_2;
-                    let mut new_x_values;
-                    let mut new_y_values;
-                    if start_is_start {
-                        new_x_values = reverse_vector(remove_start.x_values.clone());
-                        new_y_values = reverse_vector(remove_start.y_values.clone());
+                    if extend {
+                        let mut last_point_1;
+                        let mut last_point_2;
+                        let mut second_last_point_1;
+                        let mut second_last_point_2;
+                        let mut new_x_values;
+                        let mut new_y_values;
+                        if start_is_start {
+                            new_x_values = reverse_vector(remove_start.x_values.clone());
+                            new_y_values = reverse_vector(remove_start.y_values.clone());
+                            last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
+                            second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                        }
+                        else{
+                            new_x_values = remove_start.x_values.clone();
+                            new_y_values = remove_start.y_values.clone();
+                            last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
+                            second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                        }
+                        let mut polyline_values_x = reverse_vector(polyline.x_values.clone());
+                        let mut polyline_values_y = reverse_vector(polyline.y_values.clone());
+                        last_point_2 = CustomPoint::new(polyline_values_x.pop().unwrap(), polyline_values_y.pop().unwrap());
+                        second_last_point_2 = CustomPoint::new(polyline_values_x.last().unwrap().clone(), polyline_values_y.last().unwrap().clone());
+                        let mut interception = CustomPoint::new(0., 0.);
+                        if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
+                            interception = found_point;
+                        }
+                        new_x_values.push(interception.x);
+                        new_y_values.push(interception.y);
+                        new_x_values.append(&mut reverse_vector(polyline_values_x));
+                        new_y_values.append(&mut reverse_vector(polyline_values_y));
                         last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
                         second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                        let mut remove_x_values = remove_end.x_values.clone();
+                        let mut remove_y_values = remove_end.y_values.clone();
+                        if end_is_start {
+                            remove_x_values = reverse_vector(remove_x_values);
+                            remove_y_values = reverse_vector(remove_y_values);
+                            last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
+                            second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
+                            remove_x_values = reverse_vector(remove_x_values);
+                            remove_y_values = reverse_vector(remove_y_values);
+                        }
+                        else{
+                            last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
+                            second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
+                            remove_x_values = reverse_vector(remove_x_values);
+                            remove_y_values = reverse_vector(remove_y_values);
+                        }
+    
+                        if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
+                            interception = found_point;
+                        }
+                        //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
+                        new_x_values.push(interception.x);
+                        new_y_values.push(interception.y);
+                        let closed = remove_start == remove_end;
+                        if !closed {
+                            new_x_values.append(&mut remove_x_values);
+                            new_y_values.append(&mut remove_y_values);
+                        }
+                        
+                        
+                        //println!("Case1 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
+                        out_polylines.push(PolyLine::new(closed, new_x_values, new_y_values));
                     }
                     else{
-                        new_x_values = remove_start.x_values.clone();
-                        new_y_values = remove_start.y_values.clone();
-                        last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
-                        second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
-                    }
-                    let mut polyline_values_x = reverse_vector(polyline.x_values.clone());
-                    let mut polyline_values_y = reverse_vector(polyline.y_values.clone());
-                    last_point_2 = CustomPoint::new(polyline_values_x.pop().unwrap(), polyline_values_y.pop().unwrap());
-                    second_last_point_2 = CustomPoint::new(polyline_values_x.last().unwrap().clone(), polyline_values_y.last().unwrap().clone());
-                    let mut interception = CustomPoint::new(0., 0.);
-                    if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
-                        interception = found_point;
-                    }
-                    new_x_values.push(interception.x);
-                    new_y_values.push(interception.y);
-                    new_x_values.append(&mut reverse_vector(polyline_values_x));
-                    new_y_values.append(&mut reverse_vector(polyline_values_y));
-                    last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
-                    second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
-                    let mut remove_x_values = remove_end.x_values.clone();
-                    let mut remove_y_values = remove_end.y_values.clone();
-                    if end_is_start {
-                        remove_x_values = reverse_vector(remove_x_values);
-                        remove_y_values = reverse_vector(remove_y_values);
-                        last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
-                        second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
-                        remove_x_values = reverse_vector(remove_x_values);
-                        remove_y_values = reverse_vector(remove_y_values);
-                    }
-                    else{
-                        last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
-                        second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
-                        remove_x_values = reverse_vector(remove_x_values);
-                        remove_y_values = reverse_vector(remove_y_values);
-                    }
-
-                    if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
-                        interception = found_point;
-                    }
-                    //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
-                    new_x_values.push(interception.x);
-                    new_y_values.push(interception.y);
-                    let closed = remove_start == remove_end;
-                    if !closed {
-                        new_x_values.append(&mut remove_x_values);
-                        new_y_values.append(&mut remove_y_values);
+                        let mut new_x_values;
+                        let mut new_y_values;
+                        if start_is_start {
+                            new_x_values = reverse_vector(remove_start.x_values.clone());
+                            new_y_values = reverse_vector(remove_start.y_values.clone());
+                        }
+                        else{
+                            new_x_values = remove_start.x_values.clone();
+                            new_y_values = remove_start.y_values.clone();
+                        }
+                        new_x_values.append(&mut polyline.x_values.clone());
+                        new_y_values.append(&mut polyline.y_values.clone());
+                        
+                        let closed = remove_start == remove_end;
+                        if !closed{
+                            if end_is_start {
+                                new_x_values.append(&mut remove_end.x_values.clone());
+                                new_y_values.append(&mut remove_end.y_values.clone());
+                            }
+                            else{
+                                new_x_values.append(&mut reverse_vector(remove_end.x_values.clone()));
+                                new_y_values.append(&mut reverse_vector(remove_end.y_values.clone()));
+                            }
+                        }
+                        out_polylines.push(PolyLine::new(closed, new_x_values, new_y_values));
                     }
                     
-                    
-                    //println!("Case1 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
-                    out_polylines.push(PolyLine::new(closed, new_x_values, new_y_values));
                 }
                 
                 else if let Some(remove) = start_connection {
@@ -443,46 +475,64 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
                         continue;
                     }
                     has_changed.push(remove.clone());
-                    let last_point_1;
-                    let last_point_2;
-                    let second_last_point_1;
-                    let second_last_point_2;
-                    let mut new_x_values;
-                    let mut new_y_values;
-                    if start_is_start {
-                        new_x_values = reverse_vector(remove.x_values.clone());
-                        new_y_values = reverse_vector(remove.y_values.clone());
-                        last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
-                        second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                    if extend {
+                        let last_point_1;
+                        let last_point_2;
+                        let second_last_point_1;
+                        let second_last_point_2;
+                        let mut new_x_values;
+                        let mut new_y_values;
+                        if start_is_start {
+                            new_x_values = reverse_vector(remove.x_values.clone());
+                            new_y_values = reverse_vector(remove.y_values.clone());
+                            last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
+                            second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                        }
+                        else{
+                            new_x_values = remove.x_values.clone();
+                            new_y_values = remove.y_values.clone();
+                            last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
+                            second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                        }
+                        let mut polyline_values_x = reverse_vector(polyline.x_values.clone());
+                        let mut polyline_values_y = reverse_vector(polyline.y_values.clone());
+                        last_point_2 = CustomPoint::new(polyline_values_x.pop().unwrap(), polyline_values_y.pop().unwrap());
+                        second_last_point_2 = CustomPoint::new(polyline_values_x.last().unwrap().clone(), polyline_values_y.last().unwrap().clone());
+                        let mut interception = CustomPoint::new(0., 0.);
+                        if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
+                            interception = found_point;
+                        }
+                        new_x_values.push(interception.x);
+                        new_y_values.push(interception.y);
+                        new_x_values.append(&mut reverse_vector(polyline_values_x));
+                        new_y_values.append(&mut reverse_vector(polyline_values_y));
+                        //println!("Case2 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
+                        out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
                     }
-                    else{
-                        new_x_values = remove.x_values.clone();
-                        new_y_values = remove.y_values.clone();
-                        last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
-                        second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                    else {
+                        if start_is_start{
+                            let mut new_x_values = reverse_vector(polyline.x_values.clone());
+                            new_x_values.append(&mut remove.x_values.clone());
+                            let mut new_y_values = reverse_vector(polyline.y_values.clone());
+                            new_y_values.append(&mut remove.y_values.clone());
+                            
+                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                        }
+                        else{
+                            let mut new_x_values = reverse_vector(polyline.x_values.clone());
+                            new_x_values.append(&mut reverse_vector(remove.x_values.clone()));
+                            let mut new_y_values = reverse_vector(polyline.y_values.clone());
+                            new_y_values.append(&mut reverse_vector(remove.y_values.clone()));
+                            
+                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                        }
                     }
-                    let mut polyline_values_x = reverse_vector(polyline.x_values.clone());
-                    let mut polyline_values_y = reverse_vector(polyline.y_values.clone());
-                    last_point_2 = CustomPoint::new(polyline_values_x.pop().unwrap(), polyline_values_y.pop().unwrap());
-                    second_last_point_2 = CustomPoint::new(polyline_values_x.last().unwrap().clone(), polyline_values_y.last().unwrap().clone());
-                    let mut interception = CustomPoint::new(0., 0.);
-                    if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
-                        interception = found_point;
-                    }
-                    new_x_values.push(interception.x);
-                    new_y_values.push(interception.y);
-                    new_x_values.append(&mut reverse_vector(polyline_values_x));
-                    new_y_values.append(&mut reverse_vector(polyline_values_y));
-                    //println!("Case2 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
-                    out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                    
                 }
                 else if let Some(remove) = end_connection {
                     //skips this connection if the connector already has been used this iteration
                     //println!("case3");
-                    let last_point_1;
-                    let last_point_2;
-                    let second_last_point_1;
-                    let second_last_point_2;
+                   
                     
                     should_close = false;
                     any_changes = true;
@@ -491,37 +541,62 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
                         continue;
                     }
                     has_changed.push(remove.clone());
-                    let mut new_x_values = polyline.x_values.clone();
-                    let mut new_y_values = polyline.y_values.clone();
-                    last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
-                    second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
-                    let mut remove_x_values = remove.x_values.clone();
-                    let mut remove_y_values = remove.y_values.clone();
-                    if end_is_start {
-                        remove_x_values = reverse_vector(remove_x_values);
-                        remove_y_values = reverse_vector(remove_y_values);
-                        last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
-                        second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
-                        remove_x_values = reverse_vector(remove_x_values);
-                        remove_y_values = reverse_vector(remove_y_values);
+                    if extend {
+                        let last_point_1;
+                        let last_point_2;
+                        let second_last_point_1;
+                        let second_last_point_2;
+                        let mut new_x_values = polyline.x_values.clone();
+                        let mut new_y_values = polyline.y_values.clone();
+                        last_point_1 = CustomPoint::new(new_x_values.pop().unwrap(), new_y_values.pop().unwrap());
+                        second_last_point_1 = CustomPoint::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
+                        let mut remove_x_values = remove.x_values.clone();
+                        let mut remove_y_values = remove.y_values.clone();
+                        if end_is_start {
+                            remove_x_values = reverse_vector(remove_x_values);
+                            remove_y_values = reverse_vector(remove_y_values);
+                            last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
+                            second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
+                            remove_x_values = reverse_vector(remove_x_values);
+                            remove_y_values = reverse_vector(remove_y_values);
+                        }
+                        else{
+                            last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
+                            second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
+                            remove_x_values = reverse_vector(remove_x_values);
+                            remove_y_values = reverse_vector(remove_y_values);
+                        }
+                        let mut interception = CustomPoint::new(0., 0.);
+                        if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
+                            interception = found_point;
+                        }
+                        //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
+                        new_x_values.push(interception.x);
+                        new_y_values.push(interception.y);
+                        new_x_values.append(&mut remove_x_values);
+                        new_y_values.append(&mut remove_y_values);
+                        //println!("Case3 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
+                        out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
                     }
-                    else{
-                        last_point_2 = CustomPoint::new(remove_x_values.pop().unwrap(), remove_y_values.pop().unwrap());
-                        second_last_point_2 = CustomPoint::new(remove_x_values.last().unwrap().clone(), remove_y_values.last().unwrap().clone());
-                        remove_x_values = reverse_vector(remove_x_values);
-                        remove_y_values = reverse_vector(remove_y_values);
+                    else {
+                        if end_is_start{
+                            let mut new_x_values = polyline.x_values.clone();
+                            new_x_values.append(&mut remove.x_values.clone());
+                            let mut new_y_values = polyline.y_values.clone();
+                            new_y_values.append(&mut remove.y_values.clone());
+                            
+                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                        }
+                        else{
+                            let mut new_x_values = polyline.x_values.clone();
+                            new_x_values.append(&mut reverse_vector(remove.x_values.clone()));
+                            let mut new_y_values = polyline.y_values.clone();
+                            new_y_values.append(&mut reverse_vector(remove.y_values.clone()));
+                            
+                            out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                        }
                     }
-                    let mut interception = CustomPoint::new(0., 0.);
-                    if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
-                        interception = found_point;
-                    }
-                    //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
-                    new_x_values.push(interception.x);
-                    new_y_values.push(interception.y);
-                    new_x_values.append(&mut remove_x_values);
-                    new_y_values.append(&mut remove_y_values);
-                    //println!("Case3 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
-                    out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
+                    
                 }
     
                 //If the closest point is part of the same polyline
@@ -540,226 +615,15 @@ pub fn try_to_close_polylines_extension(layer_polylines: &HashMap<String, Vec<Po
             current_map.insert(name.clone(), out_polylines);
         }
         info!("Iterations executed: {}, Type: Connect", done_iterations);
-        out = current_map;
-    }
-out
-}
-pub fn try_to_close_polylines_connection(layer_polylines: &HashMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>, max_angle_in: &Option<i32>, o_iterations: &Option<i32>) -> HashMap<String, Vec<PolyLine>> {
-    let mut out = layer_polylines.clone();
-    let mut iterations;
-    let mut done_iterations = 0;
-    let mut any_changes = true;
-    let max_distance;
-    let _max_angle;
-    if let Some(amount) = o_iterations.clone(){
-        iterations = amount;
-    }
-    else{
-        iterations = 1;
-    }
-    if let Some(angle) = max_angle_in.clone(){
-        _max_angle = angle;
-    }
-    else{
-        _max_angle = 0;
-    }
-    if let Some(distance) = max_distance_in.clone(){
-        max_distance = distance;
-    } 
-    else {
-        max_distance = 0.0;
-    }
-    //stops if max iterations has been reached, or there were no changes in the previous iteration
-    while &iterations > &0 && any_changes {
-        iterations -= 1;
-        done_iterations += 1;
-        any_changes = false;
-        let mut current_map = HashMap::<String, Vec<PolyLine>>::new();
-        for(name, polylines) in &out{
-            let mut out_polylines = Vec::<PolyLine>::default();
-            let mut iter = polylines.clone();
-            let mut has_changed = Vec::<PolyLine>::default();
-            
-            while let Some(mut polyline) = iter.pop(){
-                if has_changed.contains(&polyline){
-                    continue;
-                }
-                if polyline.is_closed{
-                    out_polylines.push(polyline);
-                    continue;
-                }
-                let start_x = polyline.x_values.first().unwrap();
-                let start_y = polyline.y_values.first().unwrap();
-                let end_x = polyline.x_values.last().unwrap();
-                let end_y = polyline.y_values.last().unwrap();
-                let start_distance = distance(start_x, start_y, end_x, end_y);
-                let mut min_distance_start = start_distance.clone();
-                let mut min_distance_end = start_distance.clone();
-                let mut should_close = true;
-                let mut start_connection = None;
-                let mut end_connection = None;
-            
-                //handles different edge cases. literally
-                let mut start_is_start = false;
-                let mut end_is_start = false;
-                //iterates through the polylines that are left in the collection
-                for cmp_polyline in polylines{
-                    if cmp_polyline.is_closed || cmp_polyline.clone() == polyline.clone(){
-                        continue;
-                    }
-                    
-                    let cmp_start_x = cmp_polyline.x_values.first().unwrap();
-                    let cmp_start_y = cmp_polyline.y_values.first().unwrap();
-                    let cmp_end_x = cmp_polyline.x_values.last().unwrap();
-                    let cmp_end_y = cmp_polyline.y_values.last().unwrap();
-                    
-                    //checks startpoint of selected polyline
-                    //against startpoint of current
-                    let mut cur_distance = distance(start_x, start_y, cmp_start_x, cmp_start_y);
-                    if cur_distance < min_distance_start && cur_distance <= max_distance{
-                        
-                        min_distance_start = cur_distance;
-                        start_connection = Some(cmp_polyline);
-                        start_is_start = true;
-                    }
-                    //against endpoint of current
-                    cur_distance = distance(start_x, start_y, cmp_end_x, cmp_end_y);
-                    if cur_distance < min_distance_start && cur_distance <= max_distance{
-                        
-                        min_distance_start = cur_distance;
-                        start_connection = Some(cmp_polyline);
-                        start_is_start = false;
-                    }
-                    //min_distance = start_distance;
-    
-                    //checks endpoint of selected polyline
-                    //against startpoint of current
-                    cur_distance = distance(end_x, end_y, cmp_start_x, cmp_start_y);
-                    if cur_distance < min_distance_end && cur_distance <= max_distance{
-                        
-                        min_distance_end = cur_distance;
-                        end_connection = Some(cmp_polyline);
-                        end_is_start = true;
-                    }
-                    //against endpoint of current
-                    cur_distance = distance(end_x, end_y, cmp_end_x, cmp_end_y);
-                    if cur_distance < min_distance_end && cur_distance <= max_distance{
-                        
-                        min_distance_end = cur_distance;
-                        end_connection = Some(cmp_polyline);
-                        end_is_start = false;
-                    }
-                }
-                
-                if let (Some(remove_start), Some(remove_end)) = (start_connection, end_connection) {
-                    should_close = false;
-                    any_changes = true;
-                    if has_changed.contains(remove_end) || has_changed.contains(remove_start) {
-                        out_polylines.push(polyline.clone());
-                        continue;
-                    }
-                    has_changed.push(remove_start.clone());
-                    has_changed.push(remove_end.clone());
-                    
-                    let mut new_x_values;
-                    let mut new_y_values;
-                    if start_is_start {
-                        new_x_values = reverse_vector(remove_start.x_values.clone());
-                        new_y_values = reverse_vector(remove_start.y_values.clone());
-                    }
-                    else{
-                        new_x_values = remove_start.x_values.clone();
-                        new_y_values = remove_start.y_values.clone();
-                    }
-                    new_x_values.append(&mut polyline.x_values.clone());
-                    new_y_values.append(&mut polyline.y_values.clone());
-                    
-                    let closed = remove_start == remove_end;
-                    if !closed{
-                        if end_is_start {
-                            new_x_values.append(&mut remove_end.x_values.clone());
-                            new_y_values.append(&mut remove_end.y_values.clone());
-                        }
-                        else{
-                            new_x_values.append(&mut reverse_vector(remove_end.x_values.clone()));
-                            new_y_values.append(&mut reverse_vector(remove_end.y_values.clone()));
-                        }
-                    }
-                    out_polylines.push(PolyLine::new(closed, new_x_values, new_y_values));
-                }
-                
-                else if let Some(remove) = start_connection {
-                    should_close = false;
-                    any_changes = true;
-                    //waits for next iteration
-                    if has_changed.contains(remove){
-                        out_polylines.push(polyline.clone());
-                        continue;
-                    }
-                    has_changed.push(remove.clone());
-                    if start_is_start{
-                        let mut new_x_values = reverse_vector(polyline.x_values.clone());
-                        new_x_values.append(&mut remove.x_values.clone());
-                        let mut new_y_values = reverse_vector(polyline.y_values.clone());
-                        new_y_values.append(&mut remove.y_values.clone());
-                        
-                        out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
-                    }
-                    else{
-                        let mut new_x_values = reverse_vector(polyline.x_values.clone());
-                        new_x_values.append(&mut reverse_vector(remove.x_values.clone()));
-                        let mut new_y_values = reverse_vector(polyline.y_values.clone());
-                        new_y_values.append(&mut reverse_vector(remove.y_values.clone()));
-                        
-                        out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
-                    }
-                }
-                else if let Some(remove) = end_connection {
-                    //skips this connection if the connector already has been used this iteration
-                    should_close = false;
-                    any_changes = true;
-                    if has_changed.contains(remove){
-                        out_polylines.push(polyline.clone());
-                        continue;
-                    }
-                    has_changed.push(remove.clone());
-                    if end_is_start{
-                        let mut new_x_values = polyline.x_values.clone();
-                        new_x_values.append(&mut remove.x_values.clone());
-                        let mut new_y_values = polyline.y_values.clone();
-                        new_y_values.append(&mut remove.y_values.clone());
-                        
-                        out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
-                    }
-                    else{
-                        let mut new_x_values = polyline.x_values.clone();
-                        new_x_values.append(&mut reverse_vector(remove.x_values.clone()));
-                        let mut new_y_values = polyline.y_values.clone();
-                        new_y_values.append(&mut reverse_vector(remove.y_values.clone()));
-                        
-                        out_polylines.push(PolyLine::new(false, new_x_values, new_y_values));
-                    }
-                }
-    
-                //If the closest point is part of the same polyline
-                if should_close {
-                    polyline.is_closed = polyline.x_values.len() != 2 && start_distance <= max_distance;
-                    //polyline.x_values.pop();
-                    //polyline.y_values.pop();
-                    out_polylines.push(polyline);
-                    //println!("\n closest point is part of same polyline..");
-                    //out_polylines.push(PolyLine::new(true, polyline.x_values.clone(), polyline.y_values.clone()));
-                    continue;
-                }
-                
+        for (name, layer) in all_layers {
+            if affected_layers.contains_key(name){
+                continue;
             }
-            current_map.insert(name.clone(), out_polylines);
+            current_map.insert(name.clone(), layer.clone());
         }
         out = current_map;
     }
-    info!("Iterations executed: {}, Type: Connect", done_iterations);
-    out
-//tries to fix connection without removing the polylines which has been iterated through already
+out
 }
 
 pub fn calculate_min_max(layer_polylines: &HashMap<String, Vec<PolyLine>>) -> (f64, f64, f64, f64, f64){
