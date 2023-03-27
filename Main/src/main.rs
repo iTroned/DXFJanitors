@@ -226,8 +226,8 @@ impl eframe::App for SvgApp {
                         //self.next_dxfs = Vec::<Drawing>::new();
                         //self.previous_svgs = Vec::<svg::Document>::new();
                         //self.next_svgs = Vec::<svg::Document>::new();
-                        self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
-                        self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        self.prev_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
                         self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
                         let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
                         let layers = dxfextract::extract_layers(&self.loaded_dxf);
