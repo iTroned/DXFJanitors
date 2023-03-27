@@ -215,9 +215,65 @@ impl eframe::App for SvgApp {
                 }
             }
             if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::N){
-                if let Some(path) = rfd::FileDialog::new().pick_file() {
+                if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
                     self.picked_path = Some(path.display().to_string());
-                }
+
+                    //get extension to see if we want to update display
+                    let extension = path.extension().unwrap();
+                    if extension == "dxf"{
+                        //self.selected = true;
+                        //self.previous_dxfs = Vec::<Drawing>::new();
+                        //self.next_dxfs = Vec::<Drawing>::new();
+                        //self.previous_svgs = Vec::<svg::Document>::new();
+                        //self.next_svgs = Vec::<svg::Document>::new();
+                        self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        self.next_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
+                        let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+                        let layers = dxfextract::extract_layers(&self.loaded_dxf);
+                        let mut checkbox_map = HashMap::<String, bool>::default();
+                        let mut old_name_map = HashMap::<String, String>::default();
+
+                        for (name, layer) in layers.iter() {
+                            layer_polylines.insert(name.clone(), layer.into_polylines());
+                            //layer_color.insert(name.clone(), colors.pop().unwrap().to_owned());
+                        }
+
+                        self.loaded_layers = layer_polylines.clone();
+                        self.current_layers = layer_polylines.clone();
+
+                        for layer_name in self.loaded_layers.keys() {
+                            //println!("{}", layer_name);
+                            checkbox_map.insert(layer_name.clone(), true);
+                            old_name_map.insert(layer_name.clone(), layer_name.clone());
+                        }
+
+                        self.checkbox_for_layer = checkbox_map;
+                        self.old_to_new_name = old_name_map;
+
+                        let result = algorithms::calculate_min_max(&layer_polylines);
+                        self.min_x = result.0;
+                        self.min_y = result.1;
+                        self.max_y = result.2;
+                        self.width = result.3;
+                        self.height = result.4;
+
+                        //self.current_dxf = alter_dxf(&self.loaded_dxf);
+                        //layers = extract_layers(&self.current_dxf);
+                        //Colors to use when creating svg.. The last one is used first
+                        //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
+
+
+                        self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
+                        self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                            "test", //path of svg file to display
+                            self.current_svg.to_string().as_bytes(), 
+                            FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                        )
+                        .unwrap();
+
+                    
+                    }
             }
             else if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::S){
                 if !&self.picked_path.clone().unwrap().eq("") {
@@ -257,6 +313,7 @@ impl eframe::App for SvgApp {
             /*for key in &self.pressed_keys {
                 println!("{:?}", key);
             }*/
+        }
         });
         
 
