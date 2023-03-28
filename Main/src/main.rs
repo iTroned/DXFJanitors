@@ -78,7 +78,8 @@ fn main() {
 }*/
 
 pub struct SvgApp {
-    svg_image: egui_extras::RetainedImage,
+    //rendered image
+    
     picked_path: Option<String>,
     loaded_dxf: Drawing,
     //current_dxf: Drawing,
@@ -86,20 +87,28 @@ pub struct SvgApp {
     //next_dxfs: Vec<Drawing>,
     //previous_svgs: Vec<svg::Document>,
     //next_svgs: Vec<svg::Document>,
+
+    //info about the loaded file
     min_x: f64,
     min_y: f64,
     max_y: f64,
     width: f64,
     height: f64,
-    current_svg: svg::Document,
 
+    //document that gets saved using rust svg crate
+    current_svg: svg::Document,
+    svg_image: egui_extras::RetainedImage,
+
+    //handles changes in the file where checkboxes get updated
     loaded_layers: HashMap<String, Vec<PolyLine>>,
+    //handles changes in the file where checkboxes do not get updated
+    current_layers: HashMap<String, Vec<PolyLine>>,
     //Handles the undo system
     undo_stack: Vec<UndoType>,
     redo_stack: Vec<UndoType>,
     prev_l_layers: Vec<HashMap<String, Vec<PolyLine>>>,
     next_l_layers: Vec<HashMap<String, Vec<PolyLine>>>,
-    current_layers: HashMap<String, Vec<PolyLine>>,
+    
     prev_c_layers: Vec<HashMap<String, Vec<PolyLine>>>,
     next_c_layers: Vec<HashMap<String, Vec<PolyLine>>>,
     checkbox_for_layer: HashMap<String, bool>,
@@ -109,7 +118,9 @@ pub struct SvgApp {
     iterations_slider_value: i32,
     max_angle_slider_value: i32,
     max_distance_slider_value: i32,
+    //changable name used when merging
     merge_name: String,
+    //keys that are being pressed at any given time
     pressed_keys: HashSet<egui::Key>,
     //SLIDERS
     //min: f64,
@@ -161,7 +172,7 @@ impl Default for SvgApp {
             iterations_slider_value: 1,
             max_angle_slider_value: 360,
             max_distance_slider_value: 100,
-            merge_name: String::new(),
+            merge_name: "merge_layer".to_string(),
             pressed_keys: HashSet::<egui::Key>::default(),
             //SLIDERS
             //min: (0.0), 
@@ -211,7 +222,7 @@ impl eframe::App for SvgApp {
                         }
                         
                     },
-                    egui::Event::Text(t) => { /*println!("Text = {:?}", t)*/ } _ => {}
+                    egui::Event::Text(_t) => { /*println!("Text = {:?}", t)*/ } _ => {}
                 }
             }
             if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::N){
@@ -232,7 +243,7 @@ impl eframe::App for SvgApp {
                         let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
                         let layers = dxfextract::extract_layers(&self.loaded_dxf);
                         let mut checkbox_map = HashMap::<String, bool>::default();
-                        let mut old_name_map = HashMap::<String, String>::default();
+                        //let mut old_name_map = HashMap::<String, String>::default();
 
                         for (name, layer) in layers.iter() {
                             layer_polylines.insert(name.clone(), layer.into_polylines());
@@ -245,11 +256,11 @@ impl eframe::App for SvgApp {
                         for layer_name in self.loaded_layers.keys() {
                             //println!("{}", layer_name);
                             checkbox_map.insert(layer_name.clone(), true);
-                            old_name_map.insert(layer_name.clone(), layer_name.clone());
+                            //old_name_map.insert(layer_name.clone(), layer_name.clone());
                         }
 
                         self.checkbox_for_layer = checkbox_map;
-                        self.old_to_new_name = old_name_map;
+                        //self.old_to_new_name = old_name_map;
 
                         let result = algorithms::calculate_min_max(&layer_polylines);
                         self.min_x = result.0;
@@ -287,8 +298,10 @@ impl eframe::App for SvgApp {
                         if filetype == "dxf"{
                             let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                             for (layer_name, polylines) in &self.current_layers{
-                                out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                                out_layers.insert(layer_name.clone(), polylines.clone());
+                                //self.old_to_new_name.get(layer_name).unwrap().clone()
                             }
+                            
                             match dxfwrite::savedxf(out_layers, &filepath){
                                 Ok(_) => info!("DXF saved!"),
                                 Err(err) => panic!("Error while saving DXF: {}", err),
@@ -333,13 +346,13 @@ impl eframe::App for SvgApp {
                         match undo_type {
                             UndoType::Loaded => {
                                 if let Some(prev) = self.prev_l_layers.pop() {
-                                    self.undo_stack.push(UndoType::Loaded);
+                                    self.redo_stack.push(UndoType::Loaded);
                                     self.next_l_layers.push(self.loaded_layers.clone());
                                     self.loaded_layers = prev;
                                     //let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
-                                    for (name, test) in &self.old_to_new_name {
+                                    /*for (name, test) in &self.old_to_new_name {
                                         println!("{} : {}", name, test);
-                                    }
+                                    }*/
                                     /*for (layer_name, polylines) in &self.current_layers{
                                         
                                         println!("Layername: {}", layer_name);
@@ -362,6 +375,8 @@ impl eframe::App for SvgApp {
                                         FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                                     )
                                     .unwrap();
+                                
+                                   
             
                                     /*let mut temp = HashMap::<String, bool>::default();
                                     for (name, _polylines) in &self.loaded_layers {
@@ -376,12 +391,12 @@ impl eframe::App for SvgApp {
                             },
                             UndoType::Current => {
                                 if let Some(prev) = self.prev_c_layers.pop() {
-                                    self.undo_stack.push(UndoType::Current);
+                                    self.redo_stack.push(UndoType::Current);
                                     self.next_c_layers.push(self.current_layers.clone());
                                     self.current_layers = prev;
                                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                                     for (layer_name, polylines) in &self.current_layers{
-                                        out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                                        out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
                                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
@@ -432,7 +447,7 @@ impl eframe::App for SvgApp {
                             UndoType::Loaded => {
                                 if let Some(next) = self.next_l_layers.pop(){
                                     self.undo_stack.push(UndoType::Loaded);
-                                    self.prev_l_layers.push(self.current_layers.clone());
+                                    self.prev_l_layers.push(self.loaded_layers.clone());
                                     self.loaded_layers = next;
                                     /*let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                                     for (layer_name, polylines) in &self.current_layers{
@@ -446,6 +461,7 @@ impl eframe::App for SvgApp {
                                     )
                                     .unwrap();
                                     let mut checkbox_map = HashMap::<String, bool>::default();
+                                    //let mut old_name_map = HashMap::<String, String>::default();
                                     let mut old_name_map = HashMap::<String, String>::default();
                                     for layer_name in self.loaded_layers.keys() {
                                         //println!("{}", layer_name);
@@ -464,6 +480,11 @@ impl eframe::App for SvgApp {
                                         temp.insert(name.clone(), false);
                                     }
                                     self.checkbox_for_layer = temp;*/
+                                    
+
+                                   
+
+                            
                                 }
                             },
                             UndoType::Current => {
@@ -473,7 +494,7 @@ impl eframe::App for SvgApp {
                                     self.current_layers = next;
                                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                                     for (layer_name, polylines) in &self.current_layers{
-                                        out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                                        out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
                                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
@@ -512,7 +533,7 @@ impl eframe::App for SvgApp {
                     
                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
-                        out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                        out_layers.insert(layer_name.clone(), polylines.clone());
                     }
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
@@ -535,7 +556,7 @@ impl eframe::App for SvgApp {
                     self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
-                        out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                        out_layers.insert(layer_name.clone(), polylines.clone());
                     }
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
@@ -572,13 +593,24 @@ impl eframe::App for SvgApp {
             let mut checkboxes = HashMap::<String, bool>::default();
             let mut new_layer_names = HashMap::<String, String>::default();
             egui::ScrollArea::vertical().show(ui, |ui|{
-                for layer_name in self.loaded_layers.keys() {
-                    let mut checkval = self.checkbox_for_layer.get(layer_name).unwrap().clone();
-                    let mut new_name = self.old_to_new_name.get(layer_name).unwrap().clone();
+                for (layer_name, _polylines)in self.loaded_layers.clone() {
+                    let mut checkval = self.checkbox_for_layer.get(&layer_name).unwrap().clone();
+                    //let mut new_name = layer_name.clone();
+                    //println!("{}", &layer_name);
+                    let mut new_name = self.old_to_new_name.get(&layer_name).unwrap().clone();
                     ui.horizontal(|ui|{
                         ui.checkbox(&mut checkval, "");
                         ui.add(egui::TextEdit::singleline(&mut new_name));
                     });
+                    /*if new_name != layer_name {
+                        //println!("{}", &new_name);
+                        self.loaded_layers.insert(new_name.clone(), polylines.clone());
+                        self.current_layers.insert(new_name.clone(), polylines.clone());
+                        self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&layer_name).unwrap().clone());
+                        self.loaded_layers.remove(&layer_name);
+                        self.current_layers.remove(&layer_name);
+                        self.checkbox_for_layer.remove(&layer_name);
+                    }*/
                     checkboxes.insert(layer_name.clone(), checkval);
                     new_layer_names.insert(layer_name.clone(), new_name);
                     ui.separator();
@@ -601,6 +633,35 @@ impl eframe::App for SvgApp {
             
             self.last_toggled = self.toggled;
             if ui.button("Rebuild svg").clicked() {
+                let mut out_layers_name = HashMap::<String, Vec<PolyLine>>::default();
+                let mut old_name_map = HashMap::<String, String>::default();
+                //self.undo_stack.push(UndoType::Loaded);
+                //self.prev_l_layers.push(self.loaded_layers.clone());
+                for (name, val) in self.loaded_layers.clone() {
+                    let mut new_name = self.old_to_new_name.get(&name).unwrap().clone();
+                    while out_layers_name.contains_key(&new_name){
+                        new_name.push('_');
+                    }
+                    if new_name != name {
+                        //println!("{}", &new_name);
+                        //self.loaded_layers.insert(new_name.clone(), val.clone());
+                        self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&name).unwrap().clone());
+                        //self.current_layers.insert(new_name.clone(), v)
+                        //self.loaded_layers.remove(&name);
+                        self.checkbox_for_layer.remove(&name);
+                        out_layers_name.insert(new_name.clone(), val.clone());
+                        old_name_map.insert(new_name.clone(), new_name.clone());
+                    }
+                    else{
+                        out_layers_name.insert(name.clone(), val.clone());
+                        old_name_map.insert(name.clone(), name.clone());
+                    }
+                }
+                self.loaded_layers = out_layers_name;
+                self.current_layers = self.loaded_layers.clone();
+                self.old_to_new_name = old_name_map;
+
+                //rebuild part
                 let mut temp = HashMap::<String, Vec<PolyLine>>::default();
                 for (name, checked) in &self.checkbox_for_layer {
                     if checked.clone(){
@@ -619,7 +680,7 @@ impl eframe::App for SvgApp {
                 //self.current_dxf = dxfextract::convert_specific_layers(&self.current_layers, &self.current_layers.keys().cloned().collect(), &self.min_x, &self.min_y);
                 let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
-                        out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                        out_layers.insert(layer_name.clone(), polylines.clone());
                     }
                 self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                 self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
@@ -629,29 +690,75 @@ impl eframe::App for SvgApp {
                 )
                 .unwrap();
             }
+            /*if ui.button("Rename").clicked() {
+                let mut out_layers_name = HashMap::<String, Vec<PolyLine>>::default();
+                let mut old_name_map = HashMap::<String, String>::default();
+                for (name, val) in self.loaded_layers.clone() {
+                    let mut new_name = self.old_to_new_name.get(&name).unwrap().clone();
+                    if out_layers_name.contains_key(&new_name){
+                        new_name.push('_');
+                    }
+                    if new_name != name {
+                        //println!("{}", &new_name);
+                        //self.loaded_layers.insert(new_name.clone(), val.clone());
+                        self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&name).unwrap().clone());
+                        //self.current_layers.insert(new_name.clone(), v)
+                        //self.loaded_layers.remove(&name);
+                        self.checkbox_for_layer.remove(&name);
+                        out_layers_name.insert(new_name.clone(), val.clone());
+                        old_name_map.insert(new_name.clone(), new_name.clone());
+                    }
+                    else{
+                        out_layers_name.insert(name.clone(), val.clone());
+                        old_name_map.insert(name.clone(), name.clone());
+                    }
+                }
+                self.loaded_layers = out_layers_name;
+                self.current_layers = self.loaded_layers.clone();
+                self.old_to_new_name = old_name_map;
+            }*/
             ui.horizontal(|ui|{
                 if ui.button("Merge").clicked(){
                     //checks wheter the name is in use or not
                     //if let None = self.loaded_layers.get(&self.merge_name){
                         let mut full_layer = Vec::<PolyLine>::default();
                         //let mut out_map = HashMap::<String, Vec<PolyLine>>::default();
-                        if self.merge_name == "".to_string() || self.loaded_layers.contains_key(&self.merge_name){
+                        if self.merge_name == "".to_string() || self.loaded_layers.contains_key(&self.merge_name) && !self.checkbox_for_layer.get(&self.merge_name).unwrap(){
                             let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("The new layer needs different name!").set_buttons(rfd::MessageButtons::Ok).show();
                         }
-                        for (layer_name, is_checked) in &self.checkbox_for_layer{
-                            if !is_checked {
-                                //out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
-                                continue;
+                        else{
+                            self.undo_stack.push(UndoType::Loaded);
+                            self.prev_l_layers.push(self.loaded_layers.clone());
+                            for (layer_name, is_checked) in &self.checkbox_for_layer{
+                                if !is_checked {
+                                    //out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
+                                    continue;
+                                }
+                                
+                                full_layer.append(&mut self.loaded_layers.get(layer_name).unwrap().clone());
+                                self.loaded_layers.remove(layer_name);
                             }
-                            full_layer.append(&mut self.loaded_layers.get(layer_name).unwrap().clone());
+                            //out_map.insert(self.merge_name.clone(), full_layer);
+                            self.loaded_layers.insert(self.merge_name.clone(), full_layer);
+                            self.checkbox_for_layer.insert(self.merge_name.clone(), true);
+                            let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                            for (name, val) in &self.loaded_layers {
+                                if self.checkbox_for_layer.get(name).unwrap().clone() {
+                                    temp.insert(name.clone(), val.clone());
+                                }
+                            }
+                            self.current_layers = temp;
+                            self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
+                            self.merge_name = "merge_layer".to_string();
+                            self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                            self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+                            "test", //path of svg file to display
+                            self.current_svg.to_string().as_bytes(), 
+                            FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                            )
+                            .unwrap();
                         }
-                        self.undo_stack.push(UndoType::Loaded);
-                        self.prev_l_layers.push(self.loaded_layers.clone());
-                        //out_map.insert(self.merge_name.clone(), full_layer);
-                        self.loaded_layers.insert(self.merge_name.clone(), full_layer);
-                        self.checkbox_for_layer.insert(self.merge_name.clone(), false);
-                        self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
-                        self.merge_name = String::new();
+                        
                         //self.loaded_layers = out_map.clone();
 
                         //self.prev_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
@@ -799,7 +906,7 @@ impl eframe::App for SvgApp {
                         if filetype == "dxf"{
                             let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
                             for (layer_name, polylines) in &self.current_layers{
-                                out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
+                                out_layers.insert(layer_name.clone(), polylines.clone());
                             }
                             match dxfwrite::savedxf(out_layers, &filepath){
                                 Ok(_) => info!("DXF saved!"),
@@ -854,9 +961,12 @@ impl eframe::App for SvgApp {
         
 
     }
+    
 } 
 
-
+fn render_svg() {
+        
+}
 /*fn layers_as_svg() -> &'static [u8] {
     let mut document = svg::Document::new()
     // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
