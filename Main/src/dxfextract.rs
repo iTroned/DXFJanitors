@@ -1,9 +1,10 @@
 const NUM_SEGMENTS: usize = 16;
-use dxf::{entities::{self as dxfe}};
+use dxf::{entities::{self as dxfe, Spline, LwPolyline}, LwPolylineVertex, Point};
 use serde::{Serialize, Deserialize};
 use std::{collections::HashMap, f64::consts::PI, fmt};
 use log::{error, info, warn};
 use dxfe::EntityType as ET;
+use splines::{Interpolation, Key, Spline as Spline2D};
 //use dxf::Drawing;
 #[derive(Clone, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct PolyLine {
@@ -74,6 +75,7 @@ struct LayerData {
     arcs: Vec<dxfe::Arc>,
     circles: Vec<dxfe::Circle>,
     ellipses: Vec<dxfe::Ellipse>,
+    splines: Vec<dxfe::Spline>,
 }
 impl Layer {
     fn new(name: String) -> Self {
@@ -242,7 +244,7 @@ pub fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
                 ET::Arc(e) => ld.arcs.push(e.clone()),
                 ET::Circle(e) => ld.circles.push(e.clone()),
                 ET::Ellipse(e) => ld.ellipses.push(e.clone()),
-                ET::Spline(e) => error!("unhandled spline {:?}", e),
+                ET::Spline(e) => ld.lw_polylines.push(spline_to_polyline(e.clone())),
 
                 // unhandled entities --->
                 e => {
@@ -268,6 +270,21 @@ pub fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
 
     layers
 }
+
+fn spline_to_polyline(e: Spline) -> LwPolyline{
+
+    let mut lwpoly = dxfe::LwPolyline::default();
+    lwpoly.set_is_closed(e.get_is_closed());
+    
+    let c_p: Vec<Point> = e.control_points;
+    let vertix: Vec<LwPolylineVertex> = c_p.iter().map(|p| LwPolylineVertex{ x: p.x, y: p.y, ..Default::default() }).collect();
+
+    lwpoly.vertices = vertix;
+    lwpoly
+
+    
+}
+
 //all this became unused, as ezdxf in python does all the job
 /*pub fn convert_specific_layers(layers: &HashMap<String, Vec<PolyLine>>, layer_names: &Vec<String>, min_x: &f64, min_y: &f64) -> Drawing{
     let mut out_file = Drawing::new();
