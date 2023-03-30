@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 //use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point, Drawing};
 use dxf::Drawing;
 use svg::Document;
-use std::{collections::HashMap, f64::consts::PI, hash::Hash, ffi::OsStr, /*default::default*/};
+use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, hash::Hash, ffi::OsStr, /*default::default*/};
 use log::{error, info, warn};
 use egui::{Sense, Slider, Vec2};
 
@@ -100,19 +100,19 @@ pub struct SvgApp {
     svg_image: egui_extras::RetainedImage,
 
     //handles changes in the file where checkboxes get updated
-    loaded_layers: HashMap<String, Vec<PolyLine>>,
+    loaded_layers: BTreeMap<String, Vec<PolyLine>>,
     //handles changes in the file where checkboxes do not get updated
-    current_layers: HashMap<String, Vec<PolyLine>>,
+    current_layers: BTreeMap<String, Vec<PolyLine>>,
     //Handles the undo system
     undo_stack: Vec<UndoType>,
     redo_stack: Vec<UndoType>,
-    prev_l_layers: Vec<HashMap<String, Vec<PolyLine>>>,
-    next_l_layers: Vec<HashMap<String, Vec<PolyLine>>>,
+    prev_l_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
+    next_l_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     
-    prev_c_layers: Vec<HashMap<String, Vec<PolyLine>>>,
-    next_c_layers: Vec<HashMap<String, Vec<PolyLine>>>,
-    checkbox_for_layer: HashMap<String, bool>,
-    old_to_new_name: HashMap::<String, String>,
+    prev_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
+    next_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
+    checkbox_for_layer: BTreeMap<String, bool>,
+    old_to_new_name: BTreeMap::<String, String>,
     toggled: bool,
     last_toggled: bool,
     iterations_slider_value: i32,
@@ -157,16 +157,16 @@ impl Default for SvgApp {
             width: 0.0,
             height: 0.0,
             current_svg: Document::new(),
-            loaded_layers: HashMap::<String, Vec<PolyLine>>::default(),
+            loaded_layers: BTreeMap::<String, Vec<PolyLine>>::default(),
             undo_stack: Vec::<UndoType>::default(),
             redo_stack: Vec::<UndoType>::default(),
-            prev_l_layers: Vec::<HashMap<String, Vec<PolyLine>>>::default(),
-            next_l_layers: Vec::<HashMap<String, Vec<PolyLine>>>::default(),
-            current_layers: HashMap::<String, Vec<PolyLine>>::default(),
-            prev_c_layers: Vec::<HashMap<String, Vec<PolyLine>>>::default(),
-            next_c_layers: Vec::<HashMap<String, Vec<PolyLine>>>::default(),
-            checkbox_for_layer: HashMap::<String, bool>::default(),
-            old_to_new_name: HashMap::<String, String>::default(),
+            prev_l_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
+            next_l_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
+            current_layers: BTreeMap::<String, Vec<PolyLine>>::default(),
+            prev_c_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
+            next_c_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
+            checkbox_for_layer: BTreeMap::<String, bool>::default(),
+            old_to_new_name: BTreeMap::<String, String>::default(),
             toggled: true,
             last_toggled: true,
             iterations_slider_value: 1,
@@ -237,12 +237,12 @@ impl eframe::App for SvgApp {
                         //self.next_dxfs = Vec::<Drawing>::new();
                         //self.previous_svgs = Vec::<svg::Document>::new();
                         //self.next_svgs = Vec::<svg::Document>::new();
-                        self.prev_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
-                        self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                        self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                        self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                         self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
-                        let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+                        let mut layer_polylines = BTreeMap::<String, Vec<PolyLine>>::default();
                         let layers = dxfextract::extract_layers(&self.loaded_dxf);
-                        let mut checkbox_map = HashMap::<String, bool>::default();
+                        let mut checkbox_map = BTreeMap::<String, bool>::default();
                         //let mut old_name_map = HashMap::<String, String>::default();
 
                         for (name, layer) in layers.iter() {
@@ -296,7 +296,7 @@ impl eframe::App for SvgApp {
 
                         //save dxf
                         if filetype == "dxf"{
-                            let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                            let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                             for (layer_name, polylines) in &self.current_layers{
                                 out_layers.insert(layer_name.clone(), polylines.clone());
                                 //self.old_to_new_name.get(layer_name).unwrap().clone()
@@ -358,8 +358,8 @@ impl eframe::App for SvgApp {
                                         println!("Layername: {}", layer_name);
                                         out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
                                     }*/
-                                    let mut checkbox_map = HashMap::<String, bool>::default();
-                                    let mut old_name_map = HashMap::<String, String>::default();
+                                    let mut checkbox_map = BTreeMap::<String, bool>::default();
+                                    let mut old_name_map = BTreeMap::<String, String>::default();
                                     for layer_name in self.loaded_layers.keys() {
                                         //println!("{}", layer_name);
                                         checkbox_map.insert(layer_name.clone(), true);
@@ -394,7 +394,7 @@ impl eframe::App for SvgApp {
                                     self.redo_stack.push(UndoType::Current);
                                     self.next_c_layers.push(self.current_layers.clone());
                                     self.current_layers = prev;
-                                    let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                                     for (layer_name, polylines) in &self.current_layers{
                                         out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
@@ -406,7 +406,7 @@ impl eframe::App for SvgApp {
                                     )
                                     .unwrap();
             
-                                    let mut temp = HashMap::<String, bool>::default();
+                                    let mut temp = BTreeMap::<String, bool>::default();
                                     for (name, _polylines) in &self.loaded_layers {
                                         if self.current_layers.contains_key(name){
                                             temp.insert(name.clone(), true);
@@ -460,9 +460,9 @@ impl eframe::App for SvgApp {
                                         FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                                     )
                                     .unwrap();
-                                    let mut checkbox_map = HashMap::<String, bool>::default();
+                                    let mut checkbox_map = BTreeMap::<String, bool>::default();
                                     //let mut old_name_map = HashMap::<String, String>::default();
-                                    let mut old_name_map = HashMap::<String, String>::default();
+                                    let mut old_name_map = BTreeMap::<String, String>::default();
                                     for layer_name in self.loaded_layers.keys() {
                                         //println!("{}", layer_name);
                                         checkbox_map.insert(layer_name.clone(), true);
@@ -492,7 +492,7 @@ impl eframe::App for SvgApp {
                                     self.undo_stack.push(UndoType::Current);
                                     self.prev_c_layers.push(self.current_layers.clone());
                                     self.current_layers = next;
-                                    let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                                     for (layer_name, polylines) in &self.current_layers{
                                         out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
@@ -503,7 +503,7 @@ impl eframe::App for SvgApp {
                                         FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                                     )
                                     .unwrap();
-                                    let mut temp = HashMap::<String, bool>::default();
+                                    let mut temp = BTreeMap::<String, bool>::default();
                                     for (name, _polylines) in &self.loaded_layers {
                                         if self.current_layers.contains_key(name){
                                             temp.insert(name.clone(), true);
@@ -522,7 +522,7 @@ impl eframe::App for SvgApp {
                 if ui.button("Connect").clicked(){
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.clone());
-                    let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                    let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (name, checked) in &self.checkbox_for_layer {
                         if checked.clone(){
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
@@ -531,12 +531,12 @@ impl eframe::App for SvgApp {
                     self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     
                     
-                    let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(layer_name.clone(), polylines.clone());
                     }
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                    self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                    self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                     "test", //path of svg file to display
                     self.current_svg.to_string().as_bytes(), 
@@ -547,19 +547,19 @@ impl eframe::App for SvgApp {
                 if ui.button("Extend").clicked(){
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.clone());
-                    let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                    let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (name, checked) in &self.checkbox_for_layer {
                         if checked.clone(){
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
                         }
                     }
                     self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
-                    let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(layer_name.clone(), polylines.clone());
                     }
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                    self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                    self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                     "test", //path of svg file to display
                     self.current_svg.to_string().as_bytes(), 
@@ -590,8 +590,8 @@ impl eframe::App for SvgApp {
             ui.separator();
             ui.checkbox(&mut self.toggled, "Toggle All On/Off");
             ui.separator();
-            let mut checkboxes = HashMap::<String, bool>::default();
-            let mut new_layer_names = HashMap::<String, String>::default();
+            let mut checkboxes = BTreeMap::<String, bool>::default();
+            let mut new_layer_names = BTreeMap::<String, String>::default();
             egui::ScrollArea::vertical().show(ui, |ui|{
                 for (layer_name, _polylines)in self.loaded_layers.clone() {
                     let mut checkval = self.checkbox_for_layer.get(&layer_name).unwrap().clone();
@@ -621,7 +621,7 @@ impl eframe::App for SvgApp {
 
                 //code for toggle on/off for all layers
                 if self.toggled != self.last_toggled {
-                    let mut checkboxes = HashMap::<String, bool>::default();
+                    let mut checkboxes = BTreeMap::<String, bool>::default();
                     for layer_name in self.loaded_layers.keys() {
                         checkboxes.insert(layer_name.clone(), self.toggled);
                     }
@@ -633,8 +633,8 @@ impl eframe::App for SvgApp {
             
             self.last_toggled = self.toggled;
             if ui.button("Rebuild svg").clicked() {
-                let mut out_layers_name = HashMap::<String, Vec<PolyLine>>::default();
-                let mut old_name_map = HashMap::<String, String>::default();
+                let mut out_layers_name = BTreeMap::<String, Vec<PolyLine>>::default();
+                let mut old_name_map = BTreeMap::<String, String>::default();
                 //self.undo_stack.push(UndoType::Loaded);
                 //self.prev_l_layers.push(self.loaded_layers.clone());
                 for (name, val) in self.loaded_layers.clone() {
@@ -662,7 +662,7 @@ impl eframe::App for SvgApp {
                 self.old_to_new_name = old_name_map;
 
                 //rebuild part
-                let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
                 for (name, checked) in &self.checkbox_for_layer {
                     if checked.clone(){
                         temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
@@ -671,14 +671,14 @@ impl eframe::App for SvgApp {
                 self.undo_stack.push(UndoType::Current);
                 self.prev_c_layers.push(self.current_layers.clone());
                 self.current_layers = temp;
-                self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                 //self.previous_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
                 //self.previous_svgs.push(self.current_svg.clone());
                 
                 //TODO fix a better way to store previous files, so we can remove the first of them after a certain treshold
                 //println!("Length of DXF-vector: {}", self.previous_dxfs.len());
                 //self.current_dxf = dxfextract::convert_specific_layers(&self.current_layers, &self.current_layers.keys().cloned().collect(), &self.min_x, &self.min_y);
-                let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(layer_name.clone(), polylines.clone());
                     }
@@ -741,7 +741,7 @@ impl eframe::App for SvgApp {
                             //out_map.insert(self.merge_name.clone(), full_layer);
                             self.loaded_layers.insert(self.merge_name.clone(), full_layer);
                             self.checkbox_for_layer.insert(self.merge_name.clone(), true);
-                            let mut temp = HashMap::<String, Vec<PolyLine>>::default();
+                            let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
                             for (name, val) in &self.loaded_layers {
                                 if self.checkbox_for_layer.get(name).unwrap().clone() {
                                     temp.insert(name.clone(), val.clone());
@@ -827,15 +827,15 @@ impl eframe::App for SvgApp {
                             //self.previous_svgs = Vec::<svg::Document>::new();
                             //self.next_svgs = Vec::<svg::Document>::new();
                             //if we want to be able to undo to old opened files we need to fix something right here
-                            self.prev_l_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
-                            self.next_l_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
-                            self.prev_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
-                            self.next_c_layers = Vec::<HashMap<String, Vec<PolyLine>>>::default();
+                            self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                             self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
-                            let mut layer_polylines = HashMap::<String, Vec<PolyLine>>::default();
+                            let mut layer_polylines = BTreeMap::<String, Vec<PolyLine>>::default();
                             let layers = dxfextract::extract_layers(&self.loaded_dxf);
-                            let mut checkbox_map = HashMap::<String, bool>::default();
-                            let mut old_name_map = HashMap::<String, String>::default();
+                            let mut checkbox_map = BTreeMap::<String, bool>::default();
+                            let mut old_name_map = BTreeMap::<String, String>::default();
 
                             for (name, layer) in layers.iter() {
                                 layer_polylines.insert(name.clone(), layer.into_polylines());
@@ -904,7 +904,7 @@ impl eframe::App for SvgApp {
 
                         //save dxf
                         if filetype == "dxf"{
-                            let mut out_layers = HashMap::<String, Vec<PolyLine>>::default();
+                            let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                             for (layer_name, polylines) in &self.current_layers{
                                 out_layers.insert(layer_name.clone(), polylines.clone());
                             }
@@ -967,6 +967,7 @@ impl eframe::App for SvgApp {
 fn render_svg() {
         
 }
+fn sort_map(map: &mut HashMap<String, Vec<PolyLine>>) {}
 /*fn layers_as_svg() -> &'static [u8] {
     let mut document = svg::Document::new()
     // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))

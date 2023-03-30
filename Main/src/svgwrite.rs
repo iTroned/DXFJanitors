@@ -2,11 +2,11 @@ use dxf::Drawing;
 use dxfextract::PolyLine;
 use svg::node::element as svg_element;
 use svg::Document;
-use std::{collections::HashMap, f64::consts::PI, string};
+use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, string};
 use log::{error, info, warn};
 use crate::dxfextract;
 use pyo3::{PyResult, types::{PyModule, IntoPyDict}, PyAny, Python, Py};
-pub fn create_svg(layer_polylines: &HashMap<String, Vec<PolyLine>>, min_x: &f64, max_y: &f64, width: &f64, height: &f64) -> Document{
+pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64, max_y: &f64, width: &f64, height: &f64) -> Document{
     let mut document = Document::new()
     // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
         .set::<_, (f64, f64, f64, f64)>("viewBox", (0.0, 0.0, width.clone(), height.clone()))

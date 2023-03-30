@@ -2,7 +2,7 @@
 use dxfextract::PolyLine;
 
 use log::{error, info, warn};
-use std::{collections::HashMap, f64::consts::PI, vec, fmt};
+use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt};
 
 use crate::dxfextract;
 #[derive(Clone, Copy, PartialEq)]
@@ -248,7 +248,7 @@ fn angle_three_points(a: (f64, f64), b: (f64, f64), c: (f64, f64)) -> f64{
     }
     out_map
 }*/
-pub fn try_to_close_polylines(extend: bool, all_layers: &HashMap<String, Vec<PolyLine>>, affected_layers: &HashMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>, max_angle_in: &Option<i32>, o_iterations: &Option<i32>) -> HashMap<String, Vec<PolyLine>> {
+pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<PolyLine>>, affected_layers: &BTreeMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>, max_angle_in: &Option<i32>, o_iterations: &Option<i32>) -> BTreeMap<String, Vec<PolyLine>> {
     let mut out = all_layers.clone();
     let mut iterations;
     let mut done_iterations = 0;
@@ -278,7 +278,7 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &HashMap<String, Vec<Pol
         iterations -= 1;
         done_iterations += 1;
         any_changes = false;
-        let mut current_map = HashMap::<String, Vec<PolyLine>>::new();
+        let mut current_map = BTreeMap::<String, Vec<PolyLine>>::new();
         for(name, polylines) in &out{
             if !affected_layers.contains_key(name){
                 continue;
@@ -626,7 +626,7 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &HashMap<String, Vec<Pol
 out
 }
 
-pub fn calculate_min_max(layer_polylines: &HashMap<String, Vec<PolyLine>>) -> (f64, f64, f64, f64, f64){
+pub fn calculate_min_max(layer_polylines: &BTreeMap<String, Vec<PolyLine>>) -> (f64, f64, f64, f64, f64){
     let all_polylines: Vec<PolyLine> = layer_polylines
         .values()
         .flat_map(|v| v.iter().cloned())

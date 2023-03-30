@@ -4,7 +4,7 @@ use serde::{Serialize, Deserialize};
 use std::{collections::HashMap, f64::consts::PI, fmt};
 use log::{error, info, warn};
 use dxfe::EntityType as ET;
-use splines::{Interpolation, Key, Spline as Spline2D};
+//use splines::{Interpolation, Key, Spline as Spline2D};
 //use dxf::Drawing;
 #[derive(Clone, Default, PartialEq, Serialize, Deserialize, Debug)]
 pub struct PolyLine {
