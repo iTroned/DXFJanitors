@@ -3,7 +3,7 @@
 
 mod dxfwrite;
 mod algorithms;
-use algorithms::{CustomPoint, PointWithNeighbour};
+use algorithms::{Point, PointWithNeighbour};
 mod svgwrite;
 mod dxfextract;
 use dxfextract::PolyLine;
@@ -23,10 +23,12 @@ use egui::{Sense, Slider, Vec2};
 /*use line_intersection::{LineInterval, LineRelation};
 use geo::{Coordinate, Line as GeoLine, Point as GeoPoint};*/
 enum UndoType {
+    //hard type - change in layers loaded
     Loaded,
+    //soft type - change in layers shown only
     Current,
 }
-
+const DEFAULT_MERGE_NAME: &str = "merge_layer";
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
    // load logger from environment
@@ -78,15 +80,10 @@ fn main() {
 }*/
 
 pub struct SvgApp {
-    //rendered image
+    //opened dxf-file
     
     picked_path: Option<String>,
     loaded_dxf: Drawing,
-    //current_dxf: Drawing,
-    //previous_dxfs: Vec<Drawing>,
-    //next_dxfs: Vec<Drawing>,
-    //previous_svgs: Vec<svg::Document>,
-    //next_svgs: Vec<svg::Document>,
 
     //info about the loaded file
     min_x: f64,
@@ -112,9 +109,11 @@ pub struct SvgApp {
     prev_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     next_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     checkbox_for_layer: BTreeMap<String, bool>,
+    //index for renaming
     old_to_new_name: BTreeMap::<String, String>,
     toggled: bool,
     last_toggled: bool,
+    //slider info
     iterations_slider_value: i32,
     max_angle_slider_value: i32,
     max_distance_slider_value: i32,
@@ -122,16 +121,7 @@ pub struct SvgApp {
     merge_name: String,
     //keys that are being pressed at any given time
     pressed_keys: HashSet<egui::Key>,
-    //SLIDERS
-    //min: f64,
-    //max: f64,
-    //step: f64,
-    //use_steps: bool,
-    //integer: bool,
-    //vertical: bool,
-    //value: f64,
-    //trailing_fill: bool,
-    //scalar: f32,
+    
 }
 
 
@@ -146,11 +136,6 @@ impl Default for SvgApp {
             .unwrap(),
             picked_path: Some("".to_string()),
             loaded_dxf: Drawing::new(),
-            //current_dxf: Drawing::new(),
-            //previous_dxfs: Vec::<Drawing>::new(),
-            //next_dxfs: Vec::<Drawing>::new(),
-            //previous_svgs: Vec::<Document>::new(),
-            //next_svgs: Vec::<Document>::new(),
             min_x: 0.0,
             min_y: 0.0,
             max_y: 0.0,
@@ -172,18 +157,9 @@ impl Default for SvgApp {
             iterations_slider_value: 1,
             max_angle_slider_value: 360,
             max_distance_slider_value: 100,
-            merge_name: "merge_layer".to_string(),
+            merge_name: DEFAULT_MERGE_NAME.to_string(),
             pressed_keys: HashSet::<egui::Key>::default(),
-            //SLIDERS
-            //min: (0.0), 
-            //max: (100.0), 
-            //step: (1.0), 
-            //use_steps: (false), 
-            //integer: (false), 
-            //vertical: (false), 
-            //value: (10.0), 
-            //trailing_fill: (true),
-            //scalar:(10.0)  
+           
         }
     }
     
@@ -225,6 +201,7 @@ impl eframe::App for SvgApp {
                     egui::Event::Text(_t) => { /*println!("Text = {:?}", t)*/ } _ => {}
                 }
             }
+            //handles opening the file picker (copy-paste from the button)
             if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::N){
                 if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
                     self.picked_path = Some(path.display().to_string());
@@ -262,12 +239,14 @@ impl eframe::App for SvgApp {
                         self.checkbox_for_layer = checkbox_map;
                         //self.old_to_new_name = old_name_map;
 
-                        let result = algorithms::calculate_min_max(&layer_polylines);
-                        self.min_x = result.0;
-                        self.min_y = result.1;
-                        self.max_y = result.2;
-                        self.width = result.3;
-                        self.height = result.4;
+                        if let Some(result) = algorithms::calculate_min_max(&layer_polylines) {
+                            self.min_x = result.0;
+                            self.min_y = result.1;
+                            self.max_y = result.2;
+                            self.width = result.3;
+                            self.height = result.4;
+                        }
+                        
 
                         //self.current_dxf = alter_dxf(&self.loaded_dxf);
                         //layers = extract_layers(&self.current_dxf);
@@ -286,6 +265,7 @@ impl eframe::App for SvgApp {
                     
                     }
             }
+            //handles opening of save dialog from keybinds
             else if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::S){
                 if !&self.picked_path.clone().unwrap().eq("") {
                     let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
@@ -528,7 +508,7 @@ impl eframe::App for SvgApp {
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
                         }
                     }
-                    self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     
                     
                     let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -553,7 +533,7 @@ impl eframe::App for SvgApp {
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
                         }
                     }
-                    self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * self.width), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(layer_name.clone(), polylines.clone());
@@ -749,7 +729,7 @@ impl eframe::App for SvgApp {
                             }
                             self.current_layers = temp;
                             self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
-                            self.merge_name = "merge_layer".to_string();
+                            self.merge_name = DEFAULT_MERGE_NAME.to_string();
                             self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                             self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                             "test", //path of svg file to display
@@ -854,12 +834,13 @@ impl eframe::App for SvgApp {
                             self.checkbox_for_layer = checkbox_map;
                             self.old_to_new_name = old_name_map;
 
-                            let result = algorithms::calculate_min_max(&layer_polylines);
-                            self.min_x = result.0;
-                            self.min_y = result.1;
-                            self.max_y = result.2;
-                            self.width = result.3;
-                            self.height = result.4;
+                            if let Some(result) = algorithms::calculate_min_max(&layer_polylines) {
+                                self.min_x = result.0;
+                                self.min_y = result.1;
+                                self.max_y = result.2;
+                                self.width = result.3;
+                                self.height = result.4;
+                            }
 
                             //self.current_dxf = alter_dxf(&self.loaded_dxf);
                             //layers = extract_layers(&self.current_dxf);
@@ -884,6 +865,7 @@ impl eframe::App for SvgApp {
                 
             });
             
+            //sets the app to display the chosen path after picking
             if let Some(picked_path) = &self.picked_path {
                 ui.horizontal(|ui| {
                     ui.label("Chosen file:");
@@ -892,7 +874,7 @@ impl eframe::App for SvgApp {
             }
             
             
-            //SAVE BUTTONS
+            //SAVE BUTTONS - opens a file dialog that makes you able to choose location and extension
             ui.horizontal(|ui| {
             if ui.button("Save").clicked() {
                 if !&self.picked_path.clone().unwrap().eq("") {
