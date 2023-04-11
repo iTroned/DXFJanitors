@@ -277,11 +277,18 @@ fn spline_to_polyline(e: Spline) -> LwPolyline{
     lwpoly.set_is_closed(e.get_is_closed());
     
     let c_p: Vec<Point> = e.control_points;
-    let vertix: Vec<LwPolylineVertex> = c_p.iter().map(|p| LwPolylineVertex{ x: p.x, y: p.y, ..Default::default() }).collect();
-
+    let f_p = e.fit_points;
+    let vertix: Vec<LwPolylineVertex>;
+    //use fit points if available (higher accuracy on points)
+    if f_p.len() > 1{
+        vertix = f_p.iter().map(|p| LwPolylineVertex{ x: p.x, y: p.y, ..Default::default() }).collect();
+    }
+    else{
+        vertix = c_p.iter().map(|p| LwPolylineVertex{ x: p.x, y: p.y, ..Default::default() }).collect();
+    }
     lwpoly.vertices = vertix;
     lwpoly
-
+    
     
 }
 
