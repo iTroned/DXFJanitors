@@ -681,15 +681,24 @@ pub fn calculate_min_max(layer_polylines: &BTreeMap<String, Vec<PolyLine>>) -> O
         .collect();
 
     let cmp = |a: &f64, b: &f64| f64::partial_cmp(a, b).unwrap();
-    let min_x = x_values.iter().copied().min_by(cmp).unwrap();
-    let max_x = x_values.iter().copied().max_by(cmp).unwrap();
-    let min_y = y_values.iter().copied().min_by(cmp).unwrap();
-    let max_y = y_values.iter().copied().max_by(cmp).unwrap();
+   
 
-    // create document
-    let width = max_x - min_x;
-    let height = max_y - min_y;
-    Some((min_x, min_y, max_y, width, height))
+    if !(x_values.len() > 0 && y_values.len() > 0){
+        None //Return none if there is no values in BTreeMap
+    }
+    else{
+        //Can only unwrap if values exist
+        let min_x = x_values.iter().copied().min_by(cmp).unwrap();
+        let max_x = x_values.iter().copied().max_by(cmp).unwrap();
+        let min_y = y_values.iter().copied().min_by(cmp).unwrap();
+        let max_y = y_values.iter().copied().max_by(cmp).unwrap();
+
+        // create document
+        let width = max_x - min_x;
+        let height = max_y - min_y;
+        Some((min_x, min_y, max_y, width, height))
+    }
+    
 }
 
 //creates a flipped copy of a given vector - ineffecient, should be flagged
@@ -699,4 +708,62 @@ pub fn reverse_vector(mut vector: Vec<f64>) -> Vec<f64>{
         out.push(val);
     }
     out
+}
+
+
+#[cfg(test)]
+mod tests {
+    use tracing_subscriber::layer;
+
+    use super::*;
+    #[test]
+    fn test_revers_vector() {
+        //Test case 1: Empty vector
+        let vector1: Vec<f64> = vec![];
+        let expected_output1: Vec<f64> = vec![];
+        assert_eq!(reverse_vector(vector1), expected_output1);
+
+        // Test case 2: Test with vector of single element
+        let vector2: Vec<f64> = vec![1.0];
+        let expected_output2: Vec<f64> = vec![1.0];
+        assert_eq!(reverse_vector(vector2), expected_output2);
+
+        // Test case 3: Test with vector of multiple elements
+        let vector3: Vec<f64> = vec![1.0, 2.0, 3.0, 4.0];
+        let expected_output3: Vec<f64> = vec![4.0, 3.0, 2.0, 1.0];
+        assert_eq!(reverse_vector(vector3), expected_output3);
+    }
+
+    #[test]
+    fn test_calculate_min_max(){
+        //Sample data set
+        let mut layer_polylines = BTreeMap::new();
+
+
+        let x1_values = vec![1.0, 2.0, 3.0, 4.0];
+        let y1_values = vec![1.0, 2.0, 3.0, 4.0];
+
+        let x2_values = vec![5.0, 6.0, 7.0, 8.0];
+        let y2_values = vec![5.0, 6.0, 7.0, 8.0];
+
+        let x3_values = vec![-1.0, -2.0, -3.0, -4.0];
+        let y3_values = vec![-1.0, -2.0, -3.0, -4.0];
+
+        let polyline1 = PolyLine::new(false, x1_values, y1_values);
+        let polyline2 = PolyLine::new(false, x2_values, y2_values);
+        let polyline3 = PolyLine::new(false, x3_values, y3_values);
+
+        layer_polylines.insert(String::from("layer1"), vec![polyline1, polyline2]);
+        layer_polylines.insert(String::from("layer2"), vec![polyline3]);
+
+        //Test case 1 : BTreeMap is empty
+        let empty: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+        assert!(calculate_min_max(&empty).is_none());
+
+        //Test case 2 : Non-Empty, use the sample data
+        let expected = (-4.0, -4.0, 8.0, 12.0, 12.0); //(min_x, min_y, max_y, width, height)
+        assert_eq!(calculate_min_max(&layer_polylines).unwrap(), expected);
+
+
+    }
 }
