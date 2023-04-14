@@ -7,7 +7,7 @@ use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt};
 use crate::dxfextract;
 
 const SMALLEST_ANGLE: f64 = 5.;
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -120,7 +120,7 @@ fn distance(point_1x: &f64, point_1y: &f64, point_2x: &f64, point_2y: &f64) -> f
 //angle at the point two linear functions intercept
 //angle for two linear lines: angle = tan^-1 (|m2-m1|/(1+m1m2)) Where m1 is the slope of function A and m2 is the slope of function B
 fn angle_between_lines(m1: f64, m2: f64) -> f64{
-    let angle = ((m2-m1).abs()/(1.0+m1*m2)).atan();
+    let angle = ((m2-m1)/(1.0+m1*m2)).abs().atan();
     angle * 180. / PI
 }
 
@@ -133,8 +133,13 @@ fn angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
 
     let dotproduct = (v1.0*v2.0) + (v1.1*v2.1); //dot product of a 2D vector u*v = x1x2 + y1y2
 
-    let angle = (dotproduct/(length_v1 * length_v2)).acos();
-    angle * 180. / PI //return angle in degrees (f64)
+    if length_v1 * length_v2 == 0.0{
+        return 0.0
+    }
+    else {
+        let angle = (dotproduct/(length_v1 * length_v2)).acos();
+        angle * 180. / PI //return angle in degrees (f64)
+    }
 }
 
 //B is the vertex where the angle is calculated
@@ -146,8 +151,16 @@ fn angle_three_points(a: Point, b: Point, c: Point) -> f64{
 
     let angle = angle_vectors(ab, bc);
     angle //return angle*/
-    let angle_degrees = (180.0 / PI) * (b.angle_to(&a) - b.angle_to(&c)).abs();
-    angle_degrees
+
+    if a == b || a == c || b == c { //If two vertices are equal, return 0
+        return 0.0
+    }
+    else{
+        let angle_degrees = (180.0 / PI) * (b.angle_to(&a) - b.angle_to(&c)).abs();
+        angle_degrees
+    }
+
+    
 }
 //first iteration we tried. ended op not working due to f64 not implementing eq
 /*fn _extend_closest_lines(in_map: &HashMap<String, Vec<PolyLine>>) -> HashMap<String, Vec<PolyLine>>{
@@ -766,4 +779,158 @@ mod tests {
 
 
     }
+
+    #[test]
+    fn test_distance(){
+        //Test case 1: Points are equal => Distance should be zero
+        let p1 = Point::new(2.0, 2.0);
+        let p2 = Point::new(2.0, 2.0);
+        let expected_result = 0.0;
+        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+
+        assert_eq!(result, expected_result);
+
+        //Test case 2: Distance only on X-axis
+        let p1 = Point::new(0.0, 2.0);
+        let p2 = Point::new(2.0, 2.0);
+        let expected_result = 2.0;
+        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+
+        assert_eq!(result, expected_result);
+
+        //Test case 3: Distance only on Y-axis
+        let p1 = Point::new(2.0, 0.0);
+        let p2 = Point::new(2.0, 2.0);
+        let expected_result = 2.0;
+        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+
+        assert_eq!(result, expected_result);
+
+        //Test case 4: Distance on both axis
+        let p1 = Point::new(1.0, 2.0);
+        let p2 = Point::new(4.0, 6.0);
+        let expected_result = 5.0;
+        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+
+        assert_eq!(result, expected_result);
+
+    }
+
+    #[test]
+    fn test_angle_between_lines(){
+        //m1 is slope of function x, m2 is slope of function g
+        
+        //Test case 1: Line with equal slope
+        let m1 = 2.0;
+        let m2 = 2.0;
+        let expected_result = 0.0;
+        let result = angle_between_lines(m1, m2);
+
+        assert_eq!(result, expected_result);
+
+        //Test case 2: Slope is zero
+        let m1 = 0.0;
+        let m2 = 0.0;
+        let expected_result = 0.0;
+        let result = angle_between_lines(m1, m2);
+
+        assert_eq!(result, expected_result);
+
+        //Test case 3: Arbitrary slope
+        let m1 = 2.0;
+        let m2 = -3.0;
+        let expected_result = 45.0; 
+        let result = angle_between_lines(m1, m2);
+
+        assert_eq!(result, expected_result);
+
+
+
+    }
+
+    #[test]
+    fn test_intersection(){
+        //Test case 1: Two lines intersect at point (3.0, 3.0)
+        let p1 = Point::new(2.0, 2.0);
+        let p2 = Point::new(4.0, 4.0);
+        let p3 = Point::new(2.0, 4.0);
+        let p4 = Point::new(4.0, 2.0);
+        let expected_result = Some(Point::new(3.0, 3.0));
+        
+        assert_eq!(intersection(&p1, &p2, &p3, &p4), expected_result);
+
+        //Test case 2: Two lines are parallel => do not intersect
+        let p1 = Point::new(2.0, 2.0);
+        let p2 = Point::new(3.0, 3.0);
+        let p3 = Point::new(4.0, 4.0);
+        let p4 = Point::new(5.0, 5.0);
+
+        assert!(intersection(&p1, &p2, &p3, &p4).is_none());
+    }
+
+    #[test]
+    fn test_angle_vectors(){
+        //Test case 1: Length of both vectors is zero
+        let v1 = (0.0, 0.0);
+        let v2 = (0.0, 0.0);
+        let expected_result = 0.0;
+        let result = angle_vectors(v1, v2);
+
+        assert_eq!(result, expected_result);
+
+        //Test case 2: Parallel vectors
+        let v1 = (1.0, 0.0);
+        let v2 = (2.0, 0.0);
+        let expected_result = 0.0;
+        let result = angle_vectors(v1, v2);
+
+        assert_eq!(result, expected_result);
+
+        //Test case 3: Arbitrary vectors
+        let v1 = (1.0, 2.0);
+        let v2 = (3.0, 1.0);
+        let expected_result = 45.0;
+        let result = angle_vectors(v1, v2);
+        const EPSILON: f64 = 1e-6; //Accuracy on angle 
+        
+
+        assert!((result - expected_result).abs() < EPSILON)
+
+
+    }
+    
+
+    #[test]
+    fn test_angle_three_points(){
+        //Create three helper points
+        //Test case 1: Three different points
+        let p1 = Point::new(1.0, 0.0);
+        let p2 = Point::new(0.0, 0.0);
+        let p3 = Point::new(0.0, 1.0);
+        let result = angle_three_points(p1,p2, p3);
+        let expected_result = 90.0;
+        const EPSILON: f64 = 1e-6; //Accuracy on angle 
+
+        assert!((result - expected_result).abs() < EPSILON);
+
+        //Test case 2: Three equals points
+        let p1 = Point::new(1.0, 1.0);
+        let p2 = Point::new(1.0, 1.0);
+        let p3 = Point::new(1.0, 1.0);
+        let result = angle_three_points(p1,p2, p3);
+        let expected_result = 0.0;
+
+        assert_eq!(result, expected_result);
+
+        //Test case 3: Two points equal
+        let p1 = Point::new(0.0, 0.0);
+        let p2 = Point::new(2.0, 1.0);
+        let p3 = Point::new(2.0, 1.0);
+        let result = angle_three_points(p1,p2, p3);
+        let expected_result = 0.0;
+
+        assert_eq!(result, expected_result);
+
+    }
+
 }
