@@ -377,15 +377,21 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         end_is_start = false;
                     }
                 }
-                //skips cases where they are not each others closest
+                //skips cases where they are not each others closest // hard to make it optimal // need to come up with something better
+                /* 
                 if let Some(remove_start) = start_connection {
-                    let min_distance = 1000000;
+                    let mut min_distance = i32::MAX;
                     for cmp_polyline in polylines {
                         if cmp_polyline.is_closed || cmp_polyline.clone() == remove_start.clone(){
                             continue;
                         }
+                        let cmp_start_x = cmp_polyline.x_values.first().unwrap();
+                        let cmp_start_y = cmp_polyline.y_values.first().unwrap();
+                        let cmp_end_x = cmp_polyline.x_values.last().unwrap();
+                        let cmp_end_y = cmp_polyline.y_values.last().unwrap();
+                        let cur_distance = distance(end_x, end_y, cmp_end_x, cmp_end_y);
                     }
-                }
+                }*/
                 
                 if let (Some(remove_start), Some(remove_end)) = (start_connection, end_connection) {
                     should_close = false;
@@ -425,8 +431,8 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
                             interception = found_point;
                         }
-                        let angle = angle_three_points(last_point_1, interception, last_point_2);
-                        println!("{}", angle);
+                        /*let angle = angle_three_points(last_point_1, interception, last_point_2);
+                        println!("{}", angle);*/
                         new_x_values.push(interception.x);
                         new_y_values.push(interception.y);
                         new_x_values.append(&mut reverse_vector(polyline_values_x));
@@ -453,8 +459,8 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
                             interception = found_point;
                         }
-                        let angle = angle_three_points(last_point_1, interception, last_point_2);
-                        println!("{}", angle);
+                        /*let angle = angle_three_points(last_point_1, interception, last_point_2);
+                        println!("{}", angle);*/
                         //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
                         new_x_values.push(interception.x);
                         new_y_values.push(interception.y);
@@ -535,8 +541,8 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
                             interception = found_point;
                         }
-                        let angle = angle_three_points(last_point_1, interception, last_point_2);
-                        println!("{}", angle);
+                        /*let angle = angle_three_points(last_point_1, interception, last_point_2);
+                        println!("{}", angle);*/
                         new_x_values.push(interception.x);
                         new_y_values.push(interception.y);
                         new_x_values.append(&mut reverse_vector(polyline_values_x));
@@ -605,8 +611,8 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         if let Some(found_point) = intersection(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2){
                             interception = found_point;
                         }
-                        let angle = angle_three_points(last_point_1, interception, last_point_2);
-                        println!("{}", angle);
+                        /*let angle = angle_three_points(last_point_1, interception, last_point_2);
+                        println!("{}", angle);*/
                         //interception = (interception_of_points(&last_point_1, &second_last_point_1, &last_point_2, &second_last_point_2));
                         new_x_values.push(interception.x);
                         new_y_values.push(interception.y);
