@@ -508,7 +508,7 @@ impl eframe::App for SvgApp {
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
                         }
                     }
-                    self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     
                     
                     let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -533,7 +533,7 @@ impl eframe::App for SvgApp {
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
                         }
                     }
-                    self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 100. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
                         out_layers.insert(layer_name.clone(), polylines.clone());
@@ -559,7 +559,7 @@ impl eframe::App for SvgApp {
             ui.vertical(|ui| {
             //ui.add(egui::Label::new("Iterations"));
                 ui.add(Slider::new(&mut self.iterations_slider_value, 1..=10).text("Iterations (amount)"));
-                ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=100).text("Max distance (%)"));
+                ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=1000).text("Max distance (%%)"));
                 ui.add(Slider::new(&mut self.max_angle_slider_value, 1..=180).text("Max angle (°)"));
             // do not update value with slider_value when slider is change
             });
