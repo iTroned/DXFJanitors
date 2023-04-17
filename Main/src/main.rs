@@ -770,16 +770,21 @@ impl eframe::App for SvgApp {
                 ui.add(egui::TextEdit::singleline(&mut self.merge_name));
             });
             if ui.button("Delete").clicked(){
-                self.undo_stack.push(UndoType::Loaded);
-                self.prev_l_layers.push(self.loaded_layers.clone());
-                
-                for (layer_name, is_checked) in &self.checkbox_for_layer{
-                    if !is_checked {
-                        //out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
-                        continue;
-                    }
-                    self.loaded_layers.remove(layer_name);
+                let _msg = rfd::MessageDialog::new().set_title("ALERT!").set_description("Are you sure you want to delete this layer(s)").set_buttons(rfd::MessageButtons::OkCancel).show();
+                if !_msg{
+                    //do not do anything, cancel delete
                 }
+                else{
+                    self.undo_stack.push(UndoType::Loaded);
+                    self.prev_l_layers.push(self.loaded_layers.clone());
+                
+                    for (layer_name, is_checked) in &self.checkbox_for_layer{
+                        if !is_checked {
+                            //out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
+                            continue;
+                        }
+                    self.loaded_layers.remove(layer_name);
+                    }
                     self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                     "test", //path of svg file to display
@@ -787,6 +792,7 @@ impl eframe::App for SvgApp {
                     FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                     )
                     .unwrap();
+                }
             }
             
         });
@@ -927,7 +933,7 @@ impl eframe::App for SvgApp {
                         
             ScrollArea::both().show(ui, |ui|{
             
-                self.svg_image.show_scaled(ui, 0.4) //0.4 original size because of the Resolution (High resolution ==> sharpness)
+                self.svg_image.show_scaled(ui, 0.45) //0.4 original size because of the Resolution (High resolution ==> sharpness)
 
             });
             
