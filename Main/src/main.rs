@@ -16,7 +16,7 @@ use pyo3::prelude::*;
 //use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point, Drawing};
 use dxf::Drawing;
 use svg::Document;
-use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, hash::Hash, ffi::OsStr, /*default::default*/};
+use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, hash::Hash, ffi::OsStr, f32::INFINITY, /*default::default*/};
 use log::{error, info, warn};
 use egui::{Sense, Slider, Vec2};
 
@@ -852,7 +852,7 @@ impl eframe::App for SvgApp {
                             self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                                 "test", //path of svg file to display
                                 self.current_svg.to_string().as_bytes(), 
-                                FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+                                FitTo::Zoom(1.0), //display resolution (need to check performance effect)
                             )
                             .unwrap();
 
@@ -925,8 +925,13 @@ impl eframe::App for SvgApp {
             size.x = size.x / 1.2;
             size.y = size.y / 1.2;*/
                         
+            ScrollArea::both().show(ui, |ui|{
+                self.svg_image.show(ui)
+
+            });
             
-            self.svg_image.show_size(ui, ui.available_size());
+            
+            
 
             
             /*if ui.button("Set!").clicked() {
