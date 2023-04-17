@@ -852,7 +852,7 @@ impl eframe::App for SvgApp {
                             self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
                                 "test", //path of svg file to display
                                 self.current_svg.to_string().as_bytes(), 
-                                FitTo::Zoom(1.0), //display resolution (need to check performance effect)
+                                FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
                             )
                             .unwrap();
 
@@ -926,7 +926,8 @@ impl eframe::App for SvgApp {
             size.y = size.y / 1.2;*/
                         
             ScrollArea::both().show(ui, |ui|{
-                self.svg_image.show(ui)
+            
+                self.svg_image.show_scaled(ui, 0.4) //0.4 original size because of the Resolution (High resolution ==> sharpness)
 
             });
             
