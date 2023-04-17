@@ -1,9 +1,9 @@
-use dxf::Drawing;
+
 use dxfextract::PolyLine;
 use svg::node::element as svg_element;
 use svg::Document;
-use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, string};
-use log::{error, info, warn};
+use std::{collections::{HashMap, BTreeMap}};
+use log::{info};
 use crate::dxfextract;
 use pyo3::{PyResult, types::{PyModule, IntoPyDict}, PyAny, Python, Py};
 pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64, max_y: &f64, width: &f64, height: &f64) -> Document{
@@ -72,11 +72,12 @@ pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64
 }
 pub fn save_svg(path: &String, file: &Document){
     match svg::save(path.clone() /* .replace('.', "_").replace(' ', "_") + ".svg"*/, file) {
-        Ok(_) => info!("Created file: {}", path),
+        Ok(_) => info!("Saved SVG: {}", path),
         Err(err) => panic!("Error: {}", err),
     };
 }
-pub fn save_svg_ez(path: &String) -> PyResult<()>{
+//alternative working way of saving as svg
+pub fn _save_svg_ez(path: &String) -> PyResult<()>{
     let out_path = path.clone().replace('.', "_").replace(' ', "_") + ".svg";
     Python::with_gil(|py| {
         let fun: Py<PyAny> = PyModule::from_code(

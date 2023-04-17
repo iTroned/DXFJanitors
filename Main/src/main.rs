@@ -3,22 +3,20 @@
 
 mod dxfwrite;
 mod algorithms;
-use algorithms::{Point, PointWithNeighbour};
 mod svgwrite;
 mod dxfextract;
 use dxfextract::PolyLine;
-use eframe::{egui, glow::{FILL, BLUE}, epaint::ahash::HashSet};
+use eframe::{egui, epaint::ahash::HashSet};
 use egui_extras::image::FitTo;
-use egui::{Color32, ScrollArea, Ui, text, FontDefinitions, Button, Align2};
+use egui::{Color32, ScrollArea};
 //use clap::Parser;
 
-use pyo3::prelude::*;
 //use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point, Drawing};
 use dxf::Drawing;
 use svg::Document;
-use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, hash::Hash, ffi::OsStr, f32::INFINITY, /*default::default*/};
+use std::{collections::{BTreeMap}};
 use log::{error, info, warn};
-use egui::{Sense, Slider, Vec2};
+use egui::{Slider};
 
 /*use line_intersection::{LineInterval, LineRelation};
 use geo::{Coordinate, Line as GeoLine, Point as GeoPoint};*/
@@ -262,6 +260,7 @@ impl eframe::App for SvgApp {
                         self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
                         self.svg_image = render_svg(&self.current_svg);
                     
+                        info!("Opened file at: {}", path.display().to_string());
                     }
             }
             //handles opening of save dialog from keybinds
@@ -288,12 +287,13 @@ impl eframe::App for SvgApp {
                         }
                         //save svg
                         else if filetype == "svg"{
+                            //error and logging handled in svgwrite
                             svgwrite::save_svg(&filepath, &self.current_svg);
                         }
                         //pop-up message error
                         else{
                             let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
-                        
+                            error!("No extension chosen");
                         }
                     }
                     
@@ -386,7 +386,8 @@ impl eframe::App for SvgApp {
                                     self.checkbox_for_layer = temp;
                                 }
                             },
-                        };
+                        }
+                        info!("Undid 1 step");
                     } 
                     
                     
@@ -474,6 +475,7 @@ impl eframe::App for SvgApp {
                                 }
                             },
                         }
+                        info!("Redid 1 step");
                     }
                     
                     
@@ -482,9 +484,11 @@ impl eframe::App for SvgApp {
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
+                    let mut counter = 0;
                     for (name, checked) in &self.checkbox_for_layer {
                         if checked.clone(){
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
+                            counter += 1;
                         }
                     }
                     self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
@@ -497,14 +501,17 @@ impl eframe::App for SvgApp {
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                     self.svg_image = render_svg(&self.current_svg);
+                    info!("Ran connect on {} layers", counter);
                 }
                 if ui.button("Extend").clicked(){
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
+                    let mut counter = 0;
                     for (name, checked) in &self.checkbox_for_layer {
                         if checked.clone(){
                             temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
+                            counter += 1;
                         }
                     }
                     self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
@@ -515,6 +522,7 @@ impl eframe::App for SvgApp {
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                     self.svg_image = render_svg(&self.current_svg);
+                    info!("Ran extend on {} layers", counter);
                 }
                 if ui.button("+").clicked() {
                     if self.current_zoom < MAX_ZOOM {
@@ -643,6 +651,8 @@ impl eframe::App for SvgApp {
                     }
                 self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                 self.svg_image = render_svg(&self.current_svg);
+
+                info!("Rebuilt image");
             }
             /*if ui.button("Rename").clicked() {
                 let mut out_layers_name = HashMap::<String, Vec<PolyLine>>::default();
@@ -683,12 +693,13 @@ impl eframe::App for SvgApp {
                         else{
                             self.undo_stack.push(UndoType::Loaded);
                             self.prev_l_layers.push(self.loaded_layers.clone());
+                            let mut counter = 0;
                             for (layer_name, is_checked) in &self.checkbox_for_layer{
                                 if !is_checked {
                                     //out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
                                     continue;
                                 }
-                                
+                                counter += 1;
                                 full_layer.append(&mut self.loaded_layers.get(layer_name).unwrap().clone());
                                 self.loaded_layers.remove(layer_name);
                             }
@@ -706,6 +717,8 @@ impl eframe::App for SvgApp {
                             self.merge_name = DEFAULT_MERGE_NAME.to_string();
                             self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                             self.svg_image = render_svg(&self.current_svg);
+
+                            info!("Merged {} layers", counter);
                         }
                         
                         //self.loaded_layers = out_map.clone();
@@ -746,16 +759,19 @@ impl eframe::App for SvgApp {
                 else{
                     self.undo_stack.push(UndoType::Loaded);
                     self.prev_l_layers.push(self.loaded_layers.clone());
-                
+                    let mut counter = 0;
                     for (layer_name, is_checked) in &self.checkbox_for_layer{
                         if !is_checked {
                             //out_map.insert(layer_name.clone(), self.loaded_layers.get(layer_name).unwrap().clone());
                             continue;
                         }
-                    self.loaded_layers.remove(layer_name);
+                        counter += 1;
+                        self.loaded_layers.remove(layer_name);
                     }
                     self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.svg_image = render_svg(&self.current_svg);
+
+                    info!("Deleted {} layers", counter);
                 }
             }
             
@@ -820,6 +836,7 @@ impl eframe::App for SvgApp {
 
                             self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
                             self.svg_image = render_svg(&self.current_svg);
+                            info!("Opened file at: {}", path.display().to_string());
 
                         ui.separator();
 
@@ -872,11 +889,6 @@ impl eframe::App for SvgApp {
                     }
                     
                     
-                    
-                    
-
-
-
                 }
                 
             }
@@ -923,9 +935,10 @@ fn render_svg(svg: &Document) -> egui_extras::RetainedImage {
         FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
     )
     .unwrap();
+    info!("Rendered new svg");
     image
 }
-fn sort_map(map: &mut HashMap<String, Vec<PolyLine>>) {}
+//fn _sort_map(map: &mut HashMap<String, Vec<PolyLine>>) {}
 /*fn layers_as_svg() -> &'static [u8] {
     let mut document = svg::Document::new()
     // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))

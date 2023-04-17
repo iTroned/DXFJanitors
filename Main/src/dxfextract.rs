@@ -75,7 +75,7 @@ struct LayerData {
     arcs: Vec<dxfe::Arc>,
     circles: Vec<dxfe::Circle>,
     ellipses: Vec<dxfe::Ellipse>,
-    splines: Vec<dxfe::Spline>,
+    _splines: Vec<dxfe::Spline>,
 }
 impl Layer {
     fn new(name: String) -> Self {

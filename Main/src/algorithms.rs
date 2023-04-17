@@ -119,14 +119,14 @@ fn distance(point_1x: &f64, point_1y: &f64, point_2x: &f64, point_2y: &f64) -> f
 
 //angle at the point two linear functions intercept
 //angle for two linear lines: angle = tan^-1 (|m2-m1|/(1+m1m2)) Where m1 is the slope of function A and m2 is the slope of function B
-fn angle_between_lines(m1: f64, m2: f64) -> f64{
+fn _angle_between_lines(m1: f64, m2: f64) -> f64{
     let angle = ((m2-m1)/(1.0+m1*m2)).abs().atan();
     angle * 180. / PI
 }
 
 //angle between vectors 
 //angle = arccos((a*b)/|a||b|) -> where a*b is the dot product and |a| and |b| is the length of the vectors
-fn angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
+fn _angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
     //in a tuple the values are v1.0 and v1.1
     let length_v1 = ((v1.0 * v1.0) + (v1.1*v1.1)).sqrt(); //the length of a vector is |u| = sqrt(x^2+y^2)
     let length_v2 = ((v2.0*v2.0) + (v2.1*v2.1)).sqrt();
@@ -144,7 +144,7 @@ fn angle_vectors(v1: (f64, f64), v2: (f64, f64)) -> f64{
 
 //B is the vertex where the angle is calculated
 //function creates two vectors and uses the function angle vectors to return the angle
-fn angle_three_points(a: Point, b: Point, c: Point) -> f64{
+fn _angle_three_points(a: Point, b: Point, c: Point) -> f64{
     //creating vectors: AB and BC
     /*let ab = (a.0 - b.0, b.1 - a.1); //vector AB = (B1 - A1, B2 - A2)
     let bc = (c.0 - b.0, c.1 - b.1);
@@ -732,7 +732,7 @@ pub fn reverse_vector(mut vector: Vec<f64>) -> Vec<f64>{
 
 #[cfg(test)]
 mod tests {
-    use tracing_subscriber::layer;
+    //use tracing_subscriber::layer;
 
     use super::*;
     #[test]
@@ -830,7 +830,7 @@ mod tests {
         let m1 = 2.0;
         let m2 = 2.0;
         let expected_result = 0.0;
-        let result = angle_between_lines(m1, m2);
+        let result = _angle_between_lines(m1, m2);
 
         assert_eq!(result, expected_result);
 
@@ -838,7 +838,7 @@ mod tests {
         let m1 = 0.0;
         let m2 = 0.0;
         let expected_result = 0.0;
-        let result = angle_between_lines(m1, m2);
+        let result = _angle_between_lines(m1, m2);
 
         assert_eq!(result, expected_result);
 
@@ -846,7 +846,7 @@ mod tests {
         let m1 = 2.0;
         let m2 = -3.0;
         let expected_result = 45.0; 
-        let result = angle_between_lines(m1, m2);
+        let result = _angle_between_lines(m1, m2);
 
         assert_eq!(result, expected_result);
 
@@ -880,7 +880,7 @@ mod tests {
         let v1 = (0.0, 0.0);
         let v2 = (0.0, 0.0);
         let expected_result = 0.0;
-        let result = angle_vectors(v1, v2);
+        let result = _angle_vectors(v1, v2);
 
         assert_eq!(result, expected_result);
 
@@ -888,7 +888,7 @@ mod tests {
         let v1 = (1.0, 0.0);
         let v2 = (2.0, 0.0);
         let expected_result = 0.0;
-        let result = angle_vectors(v1, v2);
+        let result = _angle_vectors(v1, v2);
 
         assert_eq!(result, expected_result);
 
@@ -896,7 +896,7 @@ mod tests {
         let v1 = (1.0, 2.0);
         let v2 = (3.0, 1.0);
         let expected_result = 45.0;
-        let result = angle_vectors(v1, v2);
+        let result = _angle_vectors(v1, v2);
         const EPSILON: f64 = 1e-6; //Accuracy on angle 
         
 
@@ -913,7 +913,7 @@ mod tests {
         let p1 = Point::new(1.0, 0.0);
         let p2 = Point::new(0.0, 0.0);
         let p3 = Point::new(0.0, 1.0);
-        let result = angle_three_points(p1,p2, p3);
+        let result = _angle_three_points(p1,p2, p3);
         let expected_result = 90.0;
         const EPSILON: f64 = 1e-6; //Accuracy on angle 
 
@@ -923,7 +923,7 @@ mod tests {
         let p1 = Point::new(1.0, 1.0);
         let p2 = Point::new(1.0, 1.0);
         let p3 = Point::new(1.0, 1.0);
-        let result = angle_three_points(p1,p2, p3);
+        let result = _angle_three_points(p1,p2, p3);
         let expected_result = 0.0;
 
         assert_eq!(result, expected_result);
@@ -932,7 +932,7 @@ mod tests {
         let p1 = Point::new(0.0, 0.0);
         let p2 = Point::new(2.0, 1.0);
         let p3 = Point::new(2.0, 1.0);
-        let result = angle_three_points(p1,p2, p3);
+        let result = _angle_three_points(p1,p2, p3);
         let expected_result = 0.0;
 
         assert_eq!(result, expected_result);
