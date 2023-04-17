@@ -28,7 +28,9 @@ enum UndoType {
     //soft type - change in layers shown only
     Current,
 }
+//constants
 const DEFAULT_MERGE_NAME: &str = "merge_layer";
+const MAX_ZOOM: i32 = 10;
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
    // load logger from environment
@@ -121,6 +123,8 @@ pub struct SvgApp {
     merge_name: String,
     //keys that are being pressed at any given time
     pressed_keys: HashSet<egui::Key>,
+    //handles zooming of the image
+    current_zoom: i32,
     
 }
 
@@ -159,6 +163,7 @@ impl Default for SvgApp {
             max_distance_slider_value: 100,
             merge_name: DEFAULT_MERGE_NAME.to_string(),
             pressed_keys: HashSet::<egui::Key>::default(),
+            current_zoom: 1,
            
         }
     }
@@ -255,13 +260,7 @@ impl eframe::App for SvgApp {
 
 
                         self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
-                        self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                            "test", //path of svg file to display
-                            self.current_svg.to_string().as_bytes(), 
-                            FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                        )
-                        .unwrap();
-
+                        self.svg_image = render_svg(&self.current_svg);
                     
                     }
             }
@@ -349,12 +348,7 @@ impl eframe::App for SvgApp {
                                     self.checkbox_for_layer = checkbox_map;
                                     self.old_to_new_name = old_name_map;
                                     self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                                        "test", //path of svg file to display
-                                        self.current_svg.to_string().as_bytes(), 
-                                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                                    )
-                                    .unwrap();
+                                    self.svg_image = render_svg(&self.current_svg);
                                 
                                    
             
@@ -379,12 +373,7 @@ impl eframe::App for SvgApp {
                                         out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
                                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                                        "test", //path of svg file to display
-                                        self.current_svg.to_string().as_bytes(), 
-                                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                                    )
-                                    .unwrap();
+                                    self.svg_image = render_svg(&self.current_svg);
             
                                     let mut temp = BTreeMap::<String, bool>::default();
                                     for (name, _polylines) in &self.loaded_layers {
@@ -434,12 +423,7 @@ impl eframe::App for SvgApp {
                                         out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
                                     }*/
                                     self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                                        "test", //path of svg file to display
-                                        self.current_svg.to_string().as_bytes(), 
-                                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                                    )
-                                    .unwrap();
+                                    self.svg_image = render_svg(&self.current_svg);
                                     let mut checkbox_map = BTreeMap::<String, bool>::default();
                                     //let mut old_name_map = HashMap::<String, String>::default();
                                     let mut old_name_map = BTreeMap::<String, String>::default();
@@ -477,12 +461,7 @@ impl eframe::App for SvgApp {
                                         out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
                                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                                        "test", //path of svg file to display
-                                        self.current_svg.to_string().as_bytes(), 
-                                        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                                    )
-                                    .unwrap();
+                                    self.svg_image = render_svg(&self.current_svg);
                                     let mut temp = BTreeMap::<String, bool>::default();
                                     for (name, _polylines) in &self.loaded_layers {
                                         if self.current_layers.contains_key(name){
@@ -517,12 +496,7 @@ impl eframe::App for SvgApp {
                     }
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                    "test", //path of svg file to display
-                    self.current_svg.to_string().as_bytes(), 
-                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                )
-                .unwrap();
+                    self.svg_image = render_svg(&self.current_svg);
                 }
                 if ui.button("Extend").clicked(){
                     self.undo_stack.push(UndoType::Current);
@@ -540,12 +514,17 @@ impl eframe::App for SvgApp {
                     }
                     self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
                     self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                    "test", //path of svg file to display
-                    self.current_svg.to_string().as_bytes(), 
-                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                )
-                .unwrap();
+                    self.svg_image = render_svg(&self.current_svg);
+                }
+                if ui.button("+").clicked() {
+                    if self.current_zoom < MAX_ZOOM {
+                        self.current_zoom += 1;
+                    }
+                }
+                if ui.button("-").clicked() {
+                    if self.current_zoom > 1 {
+                        self.current_zoom -= 1;
+                    }
                 }
                     
             });
@@ -663,12 +642,7 @@ impl eframe::App for SvgApp {
                         out_layers.insert(layer_name.clone(), polylines.clone());
                     }
                 self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                    "test", //path of svg file to display
-                    self.current_svg.to_string().as_bytes(), 
-                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                )
-                .unwrap();
+                self.svg_image = render_svg(&self.current_svg);
             }
             /*if ui.button("Rename").clicked() {
                 let mut out_layers_name = HashMap::<String, Vec<PolyLine>>::default();
@@ -731,12 +705,7 @@ impl eframe::App for SvgApp {
                             self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
                             self.merge_name = DEFAULT_MERGE_NAME.to_string();
                             self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                            self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                            "test", //path of svg file to display
-                            self.current_svg.to_string().as_bytes(), 
-                            FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                            )
-                            .unwrap();
+                            self.svg_image = render_svg(&self.current_svg);
                         }
                         
                         //self.loaded_layers = out_map.clone();
@@ -786,12 +755,7 @@ impl eframe::App for SvgApp {
                     self.loaded_layers.remove(layer_name);
                     }
                     self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                    self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                    "test", //path of svg file to display
-                    self.current_svg.to_string().as_bytes(), 
-                    FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                    )
-                    .unwrap();
+                    self.svg_image = render_svg(&self.current_svg);
                 }
             }
             
@@ -855,12 +819,7 @@ impl eframe::App for SvgApp {
 
 
                             self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
-                            self.svg_image = egui_extras::RetainedImage::from_svg_bytes_with_size(
-                                "test", //path of svg file to display
-                                self.current_svg.to_string().as_bytes(), 
-                                FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
-                            )
-                            .unwrap();
+                            self.svg_image = render_svg(&self.current_svg);
 
                         ui.separator();
 
@@ -932,8 +891,7 @@ impl eframe::App for SvgApp {
             size.y = size.y / 1.2;*/
                         
             ScrollArea::both().show(ui, |ui|{
-            
-                self.svg_image.show_scaled(ui, 0.45) //0.4 original size because of the Resolution (High resolution ==> sharpness)
+                self.svg_image.show_scaled(ui, 0.4 * self.current_zoom as f32) //0.4 original size because of the Resolution (High resolution ==> sharpness)
 
             });
             
@@ -958,8 +916,14 @@ impl eframe::App for SvgApp {
     
 } 
 
-fn render_svg() {
-        
+fn render_svg(svg: &Document) -> egui_extras::RetainedImage {
+    let image = egui_extras::RetainedImage::from_svg_bytes_with_size(
+        "rendered_image", //path of svg file to display
+        svg.to_string().as_bytes(), 
+        FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
+    )
+    .unwrap();
+    image
 }
 fn sort_map(map: &mut HashMap<String, Vec<PolyLine>>) {}
 /*fn layers_as_svg() -> &'static [u8] {
