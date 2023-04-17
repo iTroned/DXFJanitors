@@ -9,7 +9,7 @@ This is a software tool made for [Laiout](https://www.laiout.co/) as part of our
 2. Run
 
 ## Commands / Keybinds
-The API we have created our GUI in does not support input for CTRL, so use ARROW DOWN instead
+The API for EGUI does not support input for CTRL, so use ARROW DOWN instead
 
 Functions are available through buttons in the GUI as well
 
