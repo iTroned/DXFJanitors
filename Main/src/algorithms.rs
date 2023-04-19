@@ -454,6 +454,7 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         second_last_point_1 = Point::new(new_x_values.last().unwrap().clone(), new_y_values.last().unwrap().clone());
                         let mut remove_x_values = remove_end.x_values.clone();
                         let mut remove_y_values = remove_end.y_values.clone();
+
                         if end_is_start {
                             remove_x_values = reverse_vector(remove_x_values);
                             remove_y_values = reverse_vector(remove_y_values);
@@ -487,6 +488,7 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         //println!("Case1 X-length: {}, Y-length: {}", new_x_values.len(), new_y_values.len());
                         out_polylines.push(PolyLine::new(closed, new_x_values, new_y_values));
                     }
+                    //connect
                     else{
                         let mut new_x_values;
                         let mut new_y_values;
@@ -936,6 +938,191 @@ mod tests {
         let expected_result = 0.0;
 
         assert_eq!(result, expected_result);
+
+    }
+    #[test]
+    fn test_extend_polylines(){
+        //Create a Sample data set
+        //BTreeMap
+        let mut test_layers: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+        let mut test_affected_layers: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        //Random line
+        let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
+        let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
+        let polyline1 = PolyLine::new(false, x1_values, y1_values);
+
+        //Start is start
+        let x2_values = vec![1.0, 2.0, 3.0]; 
+        let y2_values = vec![1.0, 1.0, 1.0];
+        let start_is_start = PolyLine::new(false, x2_values, y2_values);
+
+        //Start is end
+        let x5_values = vec![3.0, 2.0, 1.0]; 
+        let y5_values = vec![1.0, 1.0, 1.0];
+        let start_is_end = PolyLine::new(false, x5_values, y5_values);
+
+        //End is start
+        let x3_values = vec![4.0, 5.0, 6.0]; 
+        let y3_values = vec![2.0, 3.0, 3.0];
+        let end_is_start = PolyLine::new(false, x3_values, y3_values);
+
+        //End is end
+        let x4_values = vec![6.0, 5.0, 4.0]; 
+        let y4_values = vec![3.0, 3.0, 2.0];
+        let end_is_end = PolyLine::new(false, x4_values, y4_values);
+
+
+        
+        //Test case 1: Close with it's own polyline => is closed from false to true
+        test_layers.insert(String::from("test1"), vec![polyline1.clone()]);
+        test_affected_layers.insert(String::from("test1"), vec![polyline1.clone()]);
+        let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        let mut expected: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+        let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
+        let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
+        let polyline1 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test1"), vec![polyline1.clone()]);
+
+        assert_eq!(result, expected);
+
+        //Test case 2: Extend: Start is start = True, End is start = True
+        test_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
+        test_affected_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
+        let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+    
+        let x1_values = vec![1.0, 2.0, 3.0, 5.0, 6.0]; 
+        let y1_values = vec![1.0, 1.0, 1.0, 3.0, 3.0];
+        let polyline3 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test2"), vec![polyline3.clone()]);
+
+        assert_eq!(result, expected);
+
+        //Test case 3: Extend: Start is start, end is end
+        test_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
+        test_affected_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
+        let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        
+        let x1_values = vec![6.0, 5.0, 3.0, 2.0, 1.0]; 
+        let y1_values = vec![3.0, 3.0, 1.0, 1.0, 1.0];
+        let polyline4 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test3"), vec![polyline4.clone()]);
+
+        assert_eq!(result, expected);
+
+        //Test case 5: Extend: Start is end, end is start
+        test_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]); 
+        test_affected_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]);
+        let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        let x1_values = vec![1.0, 2.0, 3.0, 5.0, 6.0]; 
+        let y1_values = vec![1.0, 1.0, 1.0, 3.0, 3.0];
+        let polyline5 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test4"), vec![polyline5.clone()]);
+
+        assert_eq!(result, expected);
+
+
+        //Test case 6: Extend: Start is end, end is end
+        test_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]); 
+        test_affected_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]);
+        let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        let x1_values = vec![6.0, 5.0, 3.0, 2.0, 1.0]; 
+        let y1_values = vec![3.0, 3.0, 1.0, 1.0, 1.0];
+        let polyline6 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test5"), vec![polyline6.clone()]);
+
+        assert_eq!(result, expected);
+
+        
+    }
+    #[test]
+    fn test_connect_polylines(){
+        //Create a Sample data set
+        //BTreeMap
+        let mut test_layers: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+        let mut test_affected_layers: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        //Random line
+        let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
+        let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
+        let polyline1 = PolyLine::new(false, x1_values, y1_values);
+
+        //Start is start
+        let x2_values = vec![1.0, 2.0, 3.0]; 
+        let y2_values = vec![1.0, 1.0, 1.0];
+        let start_is_start = PolyLine::new(false, x2_values, y2_values);
+
+        //Start is end
+        let x5_values = vec![3.0, 2.0, 1.0]; 
+        let y5_values = vec![1.0, 1.0, 1.0];
+        let start_is_end = PolyLine::new(false, x5_values, y5_values);
+
+        //End is start
+        let x3_values = vec![4.0, 5.0, 6.0]; 
+        let y3_values = vec![2.0, 3.0, 3.0];
+        let end_is_start = PolyLine::new(false, x3_values, y3_values);
+
+        //End is end
+        let x4_values = vec![6.0, 5.0, 4.0]; 
+        let y4_values = vec![3.0, 3.0, 2.0];
+        let end_is_end = PolyLine::new(false, x4_values, y4_values);
+
+        let mut expected: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        //Test case 1: Connect: Start is start, end is start
+        test_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
+        test_affected_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
+        let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
+        let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
+        let polyline3 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test2"), vec![polyline3.clone()]);
+
+        assert_eq!(result, expected);
+
+        //Test case 2: Connect: Start is start, end is end
+        test_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
+        test_affected_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
+        let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        
+        let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
+        let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
+        let polyline4 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test3"), vec![polyline4.clone()]);
+
+        assert_eq!(result, expected);
+        
+        //Test case 3: Connect: Start is end, end is start
+        test_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]); 
+        test_affected_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]);
+        let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
+        let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
+        let polyline5 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test4"), vec![polyline5.clone()]);
+
+        assert_eq!(result, expected);
+
+        //Test case 4: Connect: Start is end, end is end
+        test_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]); 
+        test_affected_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]);
+        let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
+        let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
+        let polyline6 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test5"), vec![polyline6.clone()]);
+
+        assert_eq!(result, expected);
+
 
     }
 
