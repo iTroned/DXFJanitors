@@ -972,14 +972,33 @@ mod tests {
         let y4_values = vec![3.0, 3.0, 2.0];
         let end_is_end = PolyLine::new(false, x4_values, y4_values);
 
+        let mut expected: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        //Test case 0: Only 1 iteration => line should give correct values, but is_closed = false
+        test_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
+        test_affected_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
+        let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(1));
+
+        let x1_values = vec![1.0, 2.0, 3.0, 5.0, 6.0]; 
+        let y1_values = vec![1.0, 1.0, 1.0, 3.0, 3.0];
+        let polyline3 = PolyLine::new(false, x1_values, y1_values);
+        expected.insert(String::from("test0"), vec![polyline3.clone()]);
+
+        assert_eq!(result, expected);
 
         
+        //remove the data from this test so it do not interfere with later tests
+        test_layers.remove("test0");
+        test_affected_layers.remove("test0");
+        expected.remove("test0");
+
+
         //Test case 1: Close with it's own polyline => is closed from false to true
         test_layers.insert(String::from("test1"), vec![polyline1.clone()]);
         test_affected_layers.insert(String::from("test1"), vec![polyline1.clone()]);
         let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
-        let mut expected: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
         let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
         let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
         let polyline1 = PolyLine::new(true, x1_values, y1_values);
@@ -1097,7 +1116,38 @@ mod tests {
 
         let mut expected: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
 
-        //Test case 1: Connect: Start is start, end is start
+        //Test case 0: Only 1 iteration => line should give correct values, but is_closed = false
+        test_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
+        test_affected_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
+        let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(1));
+
+        let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
+        let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
+        let polyline3 = PolyLine::new(false, x1_values, y1_values);
+        expected.insert(String::from("test0"), vec![polyline3.clone()]);
+
+        assert_eq!(result, expected);
+
+        
+        //remove the data from this test so it do not interfere with later tests
+        test_layers.remove("test0");
+        test_affected_layers.remove("test0");
+        expected.remove("test0");
+        
+
+        //Test case 1: Close with it's own polyline => is closed from false to true
+        test_layers.insert(String::from("test1"), vec![polyline1.clone()]);
+        test_affected_layers.insert(String::from("test1"), vec![polyline1.clone()]);
+        let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
+        let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
+        let polyline1 = PolyLine::new(true, x1_values, y1_values);
+        expected.insert(String::from("test1"), vec![polyline1.clone()]);
+
+        assert_eq!(result, expected);
+
+        //Test case 2: Connect: Start is start, end is start
         test_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
         test_affected_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
         let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
@@ -1109,7 +1159,7 @@ mod tests {
 
         assert_eq!(result, expected);
 
-        //Test case 2: Connect: Start is start, end is end
+        //Test case 3: Connect: Start is start, end is end
         test_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
         test_affected_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
         let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
@@ -1122,7 +1172,7 @@ mod tests {
 
         assert_eq!(result, expected);
         
-        //Test case 3: Connect: Start is end, end is start
+        //Test case 4: Connect: Start is end, end is start
         test_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]); 
         test_affected_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]);
         let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
@@ -1134,7 +1184,7 @@ mod tests {
 
         assert_eq!(result, expected);
 
-        //Test case 4: Connect: Start is end, end is end
+        //Test case 5: Connect: Start is end, end is end
         test_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]); 
         test_affected_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]);
         let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
@@ -1147,7 +1197,7 @@ mod tests {
         assert_eq!(result, expected);
 
 
-        //Test case 5: Add new layers to test_layers, BUT NOT in affected_layers => 
+        //Test case 6: Add new layers to test_layers, BUT NOT in affected_layers => 
         //Layers not added in affected, should not be closed
         let x_values = vec![10.0, 15.0, 14.0]; 
         let y_values = vec![3.0, 3.0, 2.0];
