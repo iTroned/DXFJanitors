@@ -17,6 +17,8 @@ use svg::Document;
 use std::{collections::{BTreeMap}};
 use log::{error, info, warn};
 use egui::{Slider};
+use std::time::Duration;
+use tokio::runtime::Runtime;
 
 /*use line_intersection::{LineInterval, LineRelation};
 use geo::{Coordinate, Line as GeoLine, Point as GeoPoint};*/
@@ -29,6 +31,7 @@ enum UndoType {
 //constants
 const DEFAULT_MERGE_NAME: &str = "merge_layer";
 const MAX_ZOOM: i32 = 10;
+
 #[cfg(not(target_arch = "wasm32"))]
 fn main() {
    // load logger from environment
@@ -51,7 +54,21 @@ fn main() {
     connect_layers(&layers, dxf_file, &output_path, &output_path_svg); 
 */
 
+    //async handling
+    let rt = Runtime::new().expect("Unable to create Runtime");
 
+    // Enter the runtime so that `tokio::spawn` is available immediately.
+    let _enter = rt.enter();
+
+    // Execute the runtime in its own thread.
+    // The future doesn't have to do anything. In this example, it just sleeps forever.
+    std::thread::spawn(move || {
+        rt.block_on(async {
+            loop {
+                tokio::time::sleep(Duration::from_secs(3600)).await;
+            }
+        })
+    });
 
     //EGUI
     let native_options = eframe::NativeOptions::default();
@@ -64,7 +81,7 @@ fn main() {
         Ok(_) => info!("Started App!"),
         Err(err) => panic!("Error while starting app: {}", err),
     };
-
+    
     
     
 }
@@ -123,6 +140,8 @@ pub struct SvgApp {
     pressed_keys: HashSet<egui::Key>,
     //handles zooming of the image
     current_zoom: i32,
+    is_rendering: bool,
+    //instance: SvgApp,
     
 }
 
@@ -162,7 +181,8 @@ impl Default for SvgApp {
             merge_name: DEFAULT_MERGE_NAME.to_string(),
             pressed_keys: HashSet::<egui::Key>::default(),
             current_zoom: 1,
-           
+            is_rendering: false,
+            //instance: SvgApp::default(),
         }
     }
     
@@ -204,6 +224,7 @@ impl eframe::App for SvgApp {
                     egui::Event::Text(_t) => { /*println!("Text = {:?}", t)*/ } _ => {}
                 }
             }
+            
             //handles opening the file picker (copy-paste from the button)
             if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::N){
                 if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
@@ -480,7 +501,7 @@ impl eframe::App for SvgApp {
                     
                     
                 }
-                if ui.button("Connect").clicked(){
+                if ui.button("Connect").clicked() && !self.is_rendering{
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -491,19 +512,31 @@ impl eframe::App for SvgApp {
                             counter += 1;
                         }
                     }
-                    self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    let mut connect = | | {
+                        self.is_rendering = true;
+                        self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp,
+                            &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), 
+                            &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                        
+                        let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+                        for (layer_name, polylines) in &self.current_layers{
+                            out_layers.insert(layer_name.clone(), polylines.clone());
+                        }
+                        self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                        self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                        self.svg_image = render_svg(&self.current_svg);
+                        info!("Ran connect on {} layers", counter);
+                        self.is_rendering = false;
+                    };
+                    
+                    tokio::spawn(async move {
+                        connect();
+                    });
+                    //connect();
                     
                     
-                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                    for (layer_name, polylines) in &self.current_layers{
-                        out_layers.insert(layer_name.clone(), polylines.clone());
-                    }
-                    self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                    self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                    self.svg_image = render_svg(&self.current_svg);
-                    info!("Ran connect on {} layers", counter);
                 }
-                if ui.button("Extend").clicked(){
+                if ui.button("Extend").clicked() && !self.is_rendering{
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -514,6 +547,10 @@ impl eframe::App for SvgApp {
                             counter += 1;
                         }
                     }
+                    tokio::spawn(async move {
+
+                    });
+                    self.is_rendering = true;
                     self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
                     let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
                     for (layer_name, polylines) in &self.current_layers{
@@ -523,6 +560,7 @@ impl eframe::App for SvgApp {
                     self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                     self.svg_image = render_svg(&self.current_svg);
                     info!("Ran extend on {} layers", counter);
+                    self.is_rendering = false;
                 }
                 if ui.button("+").clicked() {
                     if self.current_zoom < MAX_ZOOM {
@@ -923,7 +961,9 @@ impl eframe::App for SvgApp {
             }*/
         });
         
-
+        //let render_svg = | | {
+            //self.is_rendering = true;
+        //};
     }
     
 } 
