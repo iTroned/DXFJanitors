@@ -1038,6 +1038,29 @@ mod tests {
 
         assert_eq!(result, expected);
 
+        //Test case 7: Add new layers to test_layers, BUT NOT in affected_layers => 
+        //Layers not added in affected, should not be closed
+        let x_values = vec![10.0, 15.0, 14.0]; 
+        let y_values = vec![3.0, 3.0, 2.0];
+        let not_affected1 = PolyLine::new(false, x_values, y_values);
+
+        let x_values = vec![16.0, 15.0, 14.0]; 
+        let y_values = vec![3.0, 3.0, 2.0];
+        let not_affected2 = PolyLine::new(false, x_values, y_values);
+
+        //Add two lines into to different layers
+        test_layers.insert(String::from("test6"), vec![not_affected1.clone()]);
+        test_layers.insert(String::from("test7"), vec![not_affected2.clone()]);
+
+        //Add the exact same lines into expected => no changes should be made on the lines because they are not affected
+        expected.insert(String::from("test6"), vec![not_affected1.clone()]);
+        expected.insert(String::from("test7"), vec![not_affected2.clone()]);
+
+        let result = try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+
+        assert_eq!(result, expected);
+
+
         
     }
     #[test]
@@ -1120,6 +1143,29 @@ mod tests {
         let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
         let polyline6 = PolyLine::new(true, x1_values, y1_values);
         expected.insert(String::from("test5"), vec![polyline6.clone()]);
+
+        assert_eq!(result, expected);
+
+
+        //Test case 5: Add new layers to test_layers, BUT NOT in affected_layers => 
+        //Layers not added in affected, should not be closed
+        let x_values = vec![10.0, 15.0, 14.0]; 
+        let y_values = vec![3.0, 3.0, 2.0];
+        let not_affected1 = PolyLine::new(false, x_values, y_values);
+
+        let x_values = vec![16.0, 15.0, 14.0]; 
+        let y_values = vec![3.0, 3.0, 2.0];
+        let not_affected2 = PolyLine::new(false, x_values, y_values);
+
+        //Add two lines into to different layers
+        test_layers.insert(String::from("test6"), vec![not_affected1.clone()]);
+        test_layers.insert(String::from("test7"), vec![not_affected2.clone()]);
+
+        //Add the exact same lines into expected => no changes should be made on the lines because they are not affected
+        expected.insert(String::from("test6"), vec![not_affected1.clone()]);
+        expected.insert(String::from("test7"), vec![not_affected2.clone()]);
+
+        let result = try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         assert_eq!(result, expected);
 
