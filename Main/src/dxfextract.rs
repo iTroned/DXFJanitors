@@ -372,3 +372,77 @@ pub fn clone_dxf(in_file: &Drawing) -> Drawing {
     }
     out_file
 }*/
+
+#[cfg(test)]
+mod tests{
+    use dxf::{entities::{Spline, LwPolyline}, LwPolylineVertex};
+
+    use super::spline_to_polyline;
+
+
+
+    #[test]
+    fn test_spline_to_polyline(){
+        //Sample data set
+        //Create a spline for all cases
+        let mut test_spline = Spline::default();
+
+        test_spline.set_is_closed(false);
+        let Point1 = dxf::Point::new(2.0, 2.0, 0.0);
+        let Point2 = dxf::Point::new(3.0, 3.0, 0.0);
+        let Point3 = dxf::Point::new(4.0, 4.0, 0.0);
+        let Point4 = dxf::Point::new(2.0, 2.0, 0.0);
+
+
+        //Test case 1: Control Points and Check if is_closed is the equal value
+        let vectorPoints = vec![Point1, Point2, Point3, Point4];
+        test_spline.control_points = vectorPoints.clone();
+
+        let result = spline_to_polyline(test_spline);
+        let mut expected = LwPolyline::default();
+        expected.set_is_closed(false);
+        let vertix = vectorPoints.clone().iter().map(|p| LwPolylineVertex{ x: p.x, y: p.y, ..Default::default() }).collect();
+        expected.vertices = vertix;
+
+        assert_eq!(result, expected);
+
+        //Test case 2: Only fit points and if closed True
+        let mut test_spline2 = Spline::default();
+        test_spline2.set_is_closed(true);
+        test_spline2.fit_points = vectorPoints.clone();
+
+        let result = spline_to_polyline(test_spline2);
+        let mut expected2 = LwPolyline::default();
+        expected2.set_is_closed(true);
+        let vertix = vectorPoints.clone().iter().map(|p| LwPolylineVertex{ x: p.x, y: p.y, ..Default::default() }).collect();
+        expected2.vertices = vertix;
+
+        assert_eq!(result, expected);
+
+        //Test case 3: Both fit points and Control points
+        //Have different fit_points from control points to prove that it will register the fit points
+        let Point5 = dxf::Point::new(1.0, 1.0, 0.0);
+        let Point6 = dxf::Point::new(2.0, 2.0, 0.0);
+        let Point7 = dxf::Point::new(3.0, 3.0, 0.0);
+        let vectorPoints2 = vec![Point5, Point6, Point7];
+        
+        let mut test_spline3 = Spline::default();
+        test_spline3.fit_points = vectorPoints2.clone();
+        test_spline3.control_points = vectorPoints.clone(); 
+        test_spline3.set_is_closed(false);
+
+        let result = spline_to_polyline(test_spline3);
+        let mut expected3 = LwPolyline::default();
+        expected3.set_is_closed(false);
+        
+        //Note : Using vectorpoints 2, because the function should only map the fit points if both fit and control points exists
+        let vertix: Vec<LwPolylineVertex> = vectorPoints2.clone().iter().map(|p| LwPolylineVertex{ x: p.x, y: p.y, ..Default::default() }).collect();
+        expected3.vertices = vertix;
+
+        assert_eq!(result, expected);
+
+
+
+
+    }
+}
