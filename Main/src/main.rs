@@ -10,6 +10,7 @@ use eframe::{egui, epaint::ahash::HashSet};
 use egui_extras::image::FitTo;
 use egui::{Color32, ScrollArea};
 //use clap::Parser;
+use std::sync::RwLock;
 
 //use dxf::{entities::{self as dxfe, Line, LwPolyline, Polyline}, Point, Drawing};
 use dxf::Drawing;
@@ -106,17 +107,21 @@ pub struct SvgApp {
     min_x: f64,
     min_y: f64,
     max_y: f64,
+    min_lock: RwLock<f64>,
+    max_lock: RwLock<f64>,
     width: f64,
+    width_lock: RwLock<f64>,
     height: f64,
+    height_lock: RwLock<f64>,
 
     //document that gets saved using rust svg crate
-    current_svg: svg::Document,
-    svg_image: egui_extras::RetainedImage,
+    current_svg: RwLock<svg::Document>,
+    svg_image: RwLock<egui_extras::RetainedImage>,
 
     //handles changes in the file where checkboxes get updated
     loaded_layers: BTreeMap<String, Vec<PolyLine>>,
     //handles changes in the file where checkboxes do not get updated
-    current_layers: BTreeMap<String, Vec<PolyLine>>,
+    current_layers: RwLock<BTreeMap<String, Vec<PolyLine>>>,
     //Handles the undo system
     undo_stack: Vec<UndoType>,
     redo_stack: Vec<UndoType>,
@@ -124,7 +129,7 @@ pub struct SvgApp {
     next_l_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     
     prev_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
-    next_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
+    next_c_layers: RwLock<Vec<BTreeMap<String, Vec<PolyLine>>>>,
     checkbox_for_layer: BTreeMap<String, bool>,
     //index for renaming
     old_to_new_name: BTreeMap::<String, String>,
@@ -132,16 +137,21 @@ pub struct SvgApp {
     last_toggled: bool,
     //slider info
     iterations_slider_value: i32,
+    iter_lock: RwLock<i32>,
     max_angle_slider_value: i32,
+    angle_lock: RwLock<i32>,
     max_distance_slider_value: i32,
+    dist_lock: RwLock<i32>,
     //changable name used when merging
     merge_name: String,
     //keys that are being pressed at any given time
     pressed_keys: HashSet<egui::Key>,
     //handles zooming of the image
     current_zoom: i32,
-    is_rendering: bool,
+    is_rendering: RwLock<bool>,
     //instance: SvgApp,
+
+    temp_lock: RwLock<BTreeMap<String, Vec<PolyLine>>>,
     
 }
 
@@ -149,40 +159,48 @@ pub struct SvgApp {
 impl Default for SvgApp {
     fn default() -> Self {
         Self {
-            svg_image: egui_extras::RetainedImage::from_svg_bytes_with_size(
+            svg_image: RwLock::new(egui_extras::RetainedImage::from_svg_bytes_with_size(
                 "../tmp_file.svg", //path of svg file to display
                 include_bytes!("../tmp_file.svg"), 
                 FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
             )
-            .unwrap(),
+            .unwrap()),
             picked_path: Some("".to_string()),
             loaded_dxf: Drawing::new(),
             min_x: 0.0,
             min_y: 0.0,
             max_y: 0.0,
+            min_lock: RwLock::new(0.),
+            max_lock: RwLock::new(0.),
             width: 0.0,
+            width_lock: RwLock::new(0.),
             height: 0.0,
-            current_svg: Document::new(),
+            height_lock: RwLock::new(0.),
+            current_svg: RwLock::new(Document::new()),
             loaded_layers: BTreeMap::<String, Vec<PolyLine>>::default(),
             undo_stack: Vec::<UndoType>::default(),
             redo_stack: Vec::<UndoType>::default(),
             prev_l_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
             next_l_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
-            current_layers: BTreeMap::<String, Vec<PolyLine>>::default(),
+            current_layers: RwLock::new(BTreeMap::<String, Vec<PolyLine>>::default()),
             prev_c_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
-            next_c_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
+            next_c_layers: RwLock::new(Vec::<BTreeMap::<String, Vec<PolyLine>>>::default()),
             checkbox_for_layer: BTreeMap::<String, bool>::default(),
             old_to_new_name: BTreeMap::<String, String>::default(),
             toggled: true,
             last_toggled: true,
             iterations_slider_value: 1,
+            iter_lock: RwLock::new(0),
             max_angle_slider_value: 360,
+            angle_lock: RwLock::new(0),
             max_distance_slider_value: 100,
+            dist_lock: RwLock::new(0),
             merge_name: DEFAULT_MERGE_NAME.to_string(),
             pressed_keys: HashSet::<egui::Key>::default(),
             current_zoom: 1,
-            is_rendering: false,
+            is_rendering: RwLock::new(false),
             //instance: SvgApp::default(),
+            temp_lock: RwLock::new(BTreeMap::<String, Vec<PolyLine>>::default()),
         }
     }
     
@@ -239,7 +257,7 @@ impl eframe::App for SvgApp {
                         //self.previous_svgs = Vec::<svg::Document>::new();
                         //self.next_svgs = Vec::<svg::Document>::new();
                         self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                        self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                        *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                         self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
                         let mut layer_polylines = BTreeMap::<String, Vec<PolyLine>>::default();
                         let layers = dxfextract::extract_layers(&self.loaded_dxf);
@@ -252,7 +270,8 @@ impl eframe::App for SvgApp {
                         }
 
                         self.loaded_layers = layer_polylines.clone();
-                        self.current_layers = layer_polylines.clone();
+                        
+                        *self.current_layers.write().unwrap() = layer_polylines.clone();
 
                         for layer_name in self.loaded_layers.keys() {
                             //println!("{}", layer_name);
@@ -278,8 +297,8 @@ impl eframe::App for SvgApp {
                         //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
 
 
-                        self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
-                        self.svg_image = render_svg(&self.current_svg);
+                        *self.current_svg.write().unwrap() = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
+                        *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
                     
                         info!("Opened file at: {}", path.display().to_string());
                     }
@@ -296,7 +315,7 @@ impl eframe::App for SvgApp {
                         //save dxf
                         if filetype == "dxf"{
                             let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                            for (layer_name, polylines) in &self.current_layers{
+                            for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
                                 out_layers.insert(layer_name.clone(), polylines.clone());
                                 //self.old_to_new_name.get(layer_name).unwrap().clone()
                             }
@@ -309,7 +328,7 @@ impl eframe::App for SvgApp {
                         //save svg
                         else if filetype == "svg"{
                             //error and logging handled in svgwrite
-                            svgwrite::save_svg(&filepath, &self.current_svg);
+                            svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
                         }
                         //pop-up message error
                         else{
@@ -368,8 +387,8 @@ impl eframe::App for SvgApp {
         
                                     self.checkbox_for_layer = checkbox_map;
                                     self.old_to_new_name = old_name_map;
-                                    self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = render_svg(&self.current_svg);
+                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
                                 
                                    
             
@@ -387,18 +406,18 @@ impl eframe::App for SvgApp {
                             UndoType::Current => {
                                 if let Some(prev) = self.prev_c_layers.pop() {
                                     self.redo_stack.push(UndoType::Current);
-                                    self.next_c_layers.push(self.current_layers.clone());
-                                    self.current_layers = prev;
+                                    self.next_c_layers.write().unwrap().push(self.current_layers.read().unwrap().clone());
+                                    *self.current_layers.write().unwrap() = prev;
                                     let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                                    for (layer_name, polylines) in &self.current_layers{
+                                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
                                         out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
-                                    self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = render_svg(&self.current_svg);
+                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
             
                                     let mut temp = BTreeMap::<String, bool>::default();
                                     for (name, _polylines) in &self.loaded_layers {
-                                        if self.current_layers.contains_key(name){
+                                        if self.current_layers.read().unwrap().contains_key(name){
                                             temp.insert(name.clone(), true);
                                             continue;
                                         }
@@ -444,8 +463,8 @@ impl eframe::App for SvgApp {
                                     for (layer_name, polylines) in &self.current_layers{
                                         out_layers.insert(self.old_to_new_name.get(layer_name).unwrap().clone(), polylines.clone());
                                     }*/
-                                    self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = render_svg(&self.current_svg);
+                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
                                     let mut checkbox_map = BTreeMap::<String, bool>::default();
                                     //let mut old_name_map = HashMap::<String, String>::default();
                                     let mut old_name_map = BTreeMap::<String, String>::default();
@@ -474,19 +493,19 @@ impl eframe::App for SvgApp {
                                 }
                             },
                             UndoType::Current => {
-                                if let Some(next) = self.next_c_layers.pop(){
+                                if let Some(next) = self.next_c_layers.write().unwrap().pop(){
                                     self.undo_stack.push(UndoType::Current);
-                                    self.prev_c_layers.push(self.current_layers.clone());
-                                    self.current_layers = next;
+                                    self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
+                                    *self.current_layers.write().unwrap() = next;
                                     let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                                    for (layer_name, polylines) in &self.current_layers{
+                                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
                                         out_layers.insert(layer_name.clone(), polylines.clone());
                                     }
-                                    self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    self.svg_image = render_svg(&self.current_svg);
+                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
                                     let mut temp = BTreeMap::<String, bool>::default();
                                     for (name, _polylines) in &self.loaded_layers {
-                                        if self.current_layers.contains_key(name){
+                                        if self.current_layers.read().unwrap().contains_key(name){
                                             temp.insert(name.clone(), true);
                                             continue;
                                         }
@@ -501,9 +520,9 @@ impl eframe::App for SvgApp {
                     
                     
                 }
-                if ui.button("Connect").clicked() && !self.is_rendering{
+                if ui.button("Connect").clicked() && !*self.is_rendering.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
-                    self.prev_c_layers.push(self.current_layers.clone());
+                    self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
                     let mut counter = 0;
                     for (name, checked) in &self.checkbox_for_layer {
@@ -512,33 +531,41 @@ impl eframe::App for SvgApp {
                             counter += 1;
                         }
                     }
-                    let mut connect = | | {
-                        self.is_rendering = true;
-                        self.current_layers = algorithms::try_to_close_polylines(false, &self.current_layers, &temp,
-                            &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), 
-                            &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                    *self.min_lock.write().unwrap() = self.min_x.clone();
+                    *self.max_lock.write().unwrap() = self.max_y.clone();
+                    *self.width_lock.write().unwrap() = self.width.clone();
+                    *self.height_lock.write().unwrap() = self.height.clone();
+                    *self.iter_lock.write().unwrap() = self.iterations_slider_value.clone();
+                    *self.dist_lock.write().unwrap() = self.max_distance_slider_value.clone();
+                    *self.angle_lock.write().unwrap() = self.max_angle_slider_value.clone();
+                    *self.temp_lock.write().unwrap() = temp;
+                    let connect = || {
+                        *self.is_rendering.write().unwrap() = true;
+                        *self.current_layers.write().unwrap() = algorithms::try_to_close_polylines(false, &self.current_layers.read().unwrap(), &self.temp_lock.read().unwrap(),
+                            &Some((*self.dist_lock.read().unwrap() as f64) / 1000. * f64::sqrt(*self.width_lock.read().unwrap() * *self.width_lock.read().unwrap() + *self.height_lock.read().unwrap() * *self.height_lock.read().unwrap())), 
+                            &Some(*self.angle_lock.read().unwrap()), &Some(*self.iter_lock.read().unwrap()));
                         
                         let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                        for (layer_name, polylines) in &self.current_layers{
+                        for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
                             out_layers.insert(layer_name.clone(), polylines.clone());
                         }
-                        self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                        self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                        self.svg_image = render_svg(&self.current_svg);
-                        info!("Ran connect on {} layers", counter);
-                        self.is_rendering = false;
+                        *self.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &self.min_lock.read().unwrap(), &self.max_lock.read().unwrap(), &self.width_lock.read().unwrap(), &self.height_lock.read().unwrap());
+                        *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                        *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
+                        //info!("Ran connect on {} layers", counter);
+                        *self.is_rendering.write().unwrap() = false;
                     };
                     
-                    tokio::spawn(async move {
+                    tokio::spawn( async move{
                         connect();
                     });
                     //connect();
                     
                     
                 }
-                if ui.button("Extend").clicked() && !self.is_rendering{
+                if ui.button("Extend").clicked() && !*self.is_rendering.read().unwrap() {
                     self.undo_stack.push(UndoType::Current);
-                    self.prev_c_layers.push(self.current_layers.clone());
+                    self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
                     let mut counter = 0;
                     for (name, checked) in &self.checkbox_for_layer {
@@ -548,19 +575,21 @@ impl eframe::App for SvgApp {
                         }
                     }
                     tokio::spawn(async move {
-
+                        /*self.is_rendering = true;
+                        *self.current_layers.write().unwrap() = algorithms::try_to_close_polylines(true, &self.current_layers.read().unwrap().clone(), &temp, 
+                            &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), 
+                            &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
+                        let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+                        for (layer_name, polylines) in *self.current_layers.read().unwrap(){
+                            out_layers.insert(layer_name.clone(), polylines.clone());
+                        }
+                        self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                        self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                        self.svg_image = render_svg(&self.current_svg);
+                        info!("Ran extend on {} layers", counter);
+                        self.is_rendering = false;*/
                     });
-                    self.is_rendering = true;
-                    self.current_layers = algorithms::try_to_close_polylines(true, &self.current_layers, &temp, &Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), &Some(self.max_angle_slider_value), &Some(self.iterations_slider_value));
-                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                    for (layer_name, polylines) in &self.current_layers{
-                        out_layers.insert(layer_name.clone(), polylines.clone());
-                    }
-                    self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                    self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                    self.svg_image = render_svg(&self.current_svg);
-                    info!("Ran extend on {} layers", counter);
-                    self.is_rendering = false;
+                    
                 }
                 if ui.button("+").clicked() {
                     if self.current_zoom < MAX_ZOOM {
@@ -663,7 +692,7 @@ impl eframe::App for SvgApp {
                     }
                 }
                 self.loaded_layers = out_layers_name;
-                self.current_layers = self.loaded_layers.clone();
+                *self.current_layers.write().unwrap() = self.loaded_layers.clone();
                 self.old_to_new_name = old_name_map;
 
                 //rebuild part
@@ -674,9 +703,9 @@ impl eframe::App for SvgApp {
                     }
                 }
                 self.undo_stack.push(UndoType::Current);
-                self.prev_c_layers.push(self.current_layers.clone());
-                self.current_layers = temp;
-                self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
+                *self.current_layers.write().unwrap() = temp;
+                *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                 //self.previous_dxfs.push(dxfextract::clone_dxf(&self.current_dxf));
                 //self.previous_svgs.push(self.current_svg.clone());
                 
@@ -684,11 +713,11 @@ impl eframe::App for SvgApp {
                 //println!("Length of DXF-vector: {}", self.previous_dxfs.len());
                 //self.current_dxf = dxfextract::convert_specific_layers(&self.current_layers, &self.current_layers.keys().cloned().collect(), &self.min_x, &self.min_y);
                 let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                    for (layer_name, polylines) in &self.current_layers{
+                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
                         out_layers.insert(layer_name.clone(), polylines.clone());
                     }
-                self.current_svg = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                self.svg_image = render_svg(&self.current_svg);
+                *self.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
 
                 info!("Rebuilt image");
             }
@@ -750,11 +779,11 @@ impl eframe::App for SvgApp {
                                     temp.insert(name.clone(), val.clone());
                                 }
                             }
-                            self.current_layers = temp;
+                            *self.current_layers.write().unwrap() = temp;
                             self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
                             self.merge_name = DEFAULT_MERGE_NAME.to_string();
-                            self.current_svg = svgwrite::create_svg(&self.current_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                            self.svg_image = render_svg(&self.current_svg);
+                            *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.current_layers.read().unwrap().clone(), &self.min_x, &self.max_y, &self.width, &self.height);
+                            *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
 
                             info!("Merged {} layers", counter);
                         }
@@ -806,8 +835,8 @@ impl eframe::App for SvgApp {
                         counter += 1;
                         self.loaded_layers.remove(layer_name);
                     }
-                    self.current_svg = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                    self.svg_image = render_svg(&self.current_svg);
+                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
+                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
 
                     info!("Deleted {} layers", counter);
                 }
@@ -834,7 +863,7 @@ impl eframe::App for SvgApp {
                             self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                             self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                             self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                             self.loaded_dxf = dxf::Drawing::load_file(self.picked_path.clone().unwrap()).expect("Not a valid file");
                             let mut layer_polylines = BTreeMap::<String, Vec<PolyLine>>::default();
                             let layers = dxfextract::extract_layers(&self.loaded_dxf);
@@ -847,7 +876,7 @@ impl eframe::App for SvgApp {
                             }
 
                             self.loaded_layers = layer_polylines.clone();
-                            self.current_layers = layer_polylines.clone();
+                            *self.current_layers.write().unwrap() = layer_polylines.clone();
 
                             for layer_name in self.loaded_layers.keys() {
                                 //println!("{}", layer_name);
@@ -872,8 +901,8 @@ impl eframe::App for SvgApp {
                             //let mut colors = vec!["%23000000", "%23FF0000", "%23FFFF00", "%2300FF00", "%23008000", "%2300FFFF", "%23008080", "%230000FF", "%23FF00FF", "%23800080", "%23FFA500", "%23FFD700", "%238B4513"];
 
 
-                            self.current_svg = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
-                            self.svg_image = render_svg(&self.current_svg);
+                            *self.current_svg.write().unwrap() = svgwrite::create_svg(&layer_polylines, &self.min_x, &self.max_y, &self.width, &self.height);
+                            *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
                             info!("Opened file at: {}", path.display().to_string());
 
                         ui.separator();
@@ -907,7 +936,7 @@ impl eframe::App for SvgApp {
                         //save dxf
                         if filetype == "dxf"{
                             let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                            for (layer_name, polylines) in &self.current_layers{
+                            for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
                                 out_layers.insert(layer_name.clone(), polylines.clone());
                             }
                             match dxfwrite::savedxf(out_layers, &filepath){
@@ -917,7 +946,7 @@ impl eframe::App for SvgApp {
                         }
                         //save svg
                         else if filetype == "svg"{
-                            svgwrite::save_svg(&filepath, &self.current_svg);
+                            svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
                         }
                         //pop-up message error
                         else{
@@ -941,7 +970,7 @@ impl eframe::App for SvgApp {
             size.y = size.y / 1.2;*/
                         
             ScrollArea::both().show(ui, |ui|{
-                self.svg_image.show_scaled(ui, 0.4 * self.current_zoom as f32) //0.4 original size because of the Resolution (High resolution ==> sharpness)
+                self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom as f32) //0.4 original size because of the Resolution (High resolution ==> sharpness)
 
             });
             
