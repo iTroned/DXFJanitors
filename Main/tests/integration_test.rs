@@ -2,8 +2,9 @@
 
 use dxf_janitors;
 use dxf_janitors::dxfextract::PolyLine;
+use dxf_janitors::dxfwrite;
 use crate::dxf_janitors::algorithms;
-use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt};
+use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt, path::Path, fs::remove_file};
 
 //Integration tests => test public functions that are in use in other modules
 //Connect and Extend is from algorithm.rs used by main.rs
@@ -285,4 +286,35 @@ fn test_try_to_connect_polylines(){
         let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         assert_eq!(result, expected);
+}
+
+#[test]
+fn test_try_save_as_dxf(){
+    //Create sample data
+        //BTreeMap
+        let mut test_layers: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        //Random line
+        let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
+        let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
+        let polyline1 = PolyLine::new(false, x1_values, y1_values);
+
+        //Random line 2
+        let x2_values = vec![1.0, 2.0, 3.0]; 
+        let y2_values = vec![1.0, 1.0, 1.0];
+        let polyline2 = PolyLine::new(false, x2_values, y2_values);
+
+        //Insert lines into map
+        test_layers.insert("layer1".to_string(), vec![polyline1.clone()]);
+        test_layers.insert("layer2".to_string(), vec![polyline1.clone(), polyline2.clone()]);
+
+        //Temporary output path
+        let output_path = "test_save.dxf".to_string();
+
+        //Check if save function works and that the file was created
+        assert!(dxfwrite::savedxf(test_layers, &output_path).is_ok());
+        assert!(Path::new(&output_path).exists());
+
+        //remove the temp file (fs::remove_file)
+        remove_file(&output_path).unwrap();
 }

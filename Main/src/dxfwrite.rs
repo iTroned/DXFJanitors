@@ -26,3 +26,51 @@ pub fn savedxf(map: BTreeMap<String, Vec<PolyLine>>, path: &String) -> PyResult<
         Ok(())
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt, path::Path, fs};
+    use crate::{dxfextract::PolyLine, dxfwrite::savedxf};
+
+    #[test]
+    fn test_savedxf(){
+        //Create sample data
+        //BTreeMap
+        let mut test_layers: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        //Random line
+        let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
+        let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
+        let polyline1 = PolyLine::new(false, x1_values, y1_values);
+
+        //Random line 2
+        let x2_values = vec![1.0, 2.0, 3.0]; 
+        let y2_values = vec![1.0, 1.0, 1.0];
+        let polyline2 = PolyLine::new(false, x2_values, y2_values);
+
+        //Insert lines into map
+        test_layers.insert("layer1".to_string(), vec![polyline1.clone()]);
+        test_layers.insert("layer2".to_string(), vec![polyline1.clone(), polyline2.clone()]);
+
+        //Temporary output path
+        let output_path = "test_save.dxf".to_string();
+
+        //Check if save function works and that the file was created
+        assert!(savedxf(test_layers, &output_path).is_ok());
+        assert!(Path::new(&output_path).exists());
+
+        //remove the temp file
+        fs::remove_file(&output_path).unwrap();
+
+
+
+        
+
+
+
+
+
+
+    }
+
+}
