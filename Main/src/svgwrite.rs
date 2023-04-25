@@ -97,3 +97,44 @@ pub fn _save_svg_ez(path: &String) -> PyResult<()>{
         Ok(())
     })
 }
+
+
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[test]
+    fn test_create_svg(){
+        let mut layer_polylines: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        let x1_values = vec![0.0, 1.0, 2.0]; 
+        let y1_values = vec![0.0, 1.0, 0.0];
+        let polyline1 = PolyLine::new(true, x1_values, y1_values);
+
+        layer_polylines.insert("layer1".to_string(), vec![polyline1]);
+        let min_x = 0.0;
+        let max_y = 2.0;
+        let width = 100.0;
+        let height = 100.0;
+
+        let test_doc = create_svg(&layer_polylines, &min_x, &max_y, &width, &height);
+
+        assert_eq!(test_doc.to_string(), 
+        format!(
+            r#"<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)">
+  <g inkscape:label="layer" inkscape:groupmode="layer" style="display:inline">
+    <path fill="none" stroke="purple(16)" stroke-width="0.1px" d="M 0 -1 L 1 0 L 2 -1 Z"/>
+  </g>
+</svg>"#,
+            width = width,
+            height = height
+        )
+    );
+    
+        
+
+        
+    }
+
+}

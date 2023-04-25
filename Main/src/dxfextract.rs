@@ -375,9 +375,9 @@ pub fn clone_dxf(in_file: &Drawing) -> Drawing {
 
 #[cfg(test)]
 mod tests{
-    use dxf::{entities::{Spline, LwPolyline}, LwPolylineVertex};
+    use dxf::{entities::{Spline, LwPolyline}, LwPolylineVertex, Drawing};
 
-    use super::spline_to_polyline;
+    use super::*;
 
 
 
@@ -445,4 +445,5 @@ mod tests{
 
 
     }
+
 }

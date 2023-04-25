@@ -1,7 +1,7 @@
 #[cfg(test)]
 
 use dxf_janitors;
-use dxf_janitors::dxfextract::PolyLine;
+use dxf_janitors::{dxfextract::PolyLine, svgwrite};
 use dxf_janitors::dxfwrite;
 use crate::dxf_janitors::algorithms;
 use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt, path::Path, fs::remove_file};
@@ -318,3 +318,68 @@ fn test_try_save_as_dxf(){
         //remove the temp file (fs::remove_file)
         remove_file(&output_path).unwrap();
 }
+
+#[test]
+    //NEED TO CHECK IF FORMATTING OF SVG DOCUMENT IS CORRECT
+    fn test_create_svg(){
+        let mut layer_polylines: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+
+        let x1_values = vec![0.0, 1.0, 2.0]; 
+        let y1_values = vec![0.0, 1.0, 0.0];
+        let polyline1 = PolyLine::new(true, x1_values, y1_values);
+
+        layer_polylines.insert("layer1".to_string(), vec![polyline1]);
+        let min_x = 0.0;
+        let max_y = 2.0;
+        let width = 100.0;
+        let height = 100.0;
+
+        let test_doc = svgwrite::create_svg(&layer_polylines, &min_x, &max_y, &width, &height);
+
+        assert_eq!(test_doc.to_string(), 
+        format!(
+            r#"<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)">
+  <g inkscape:label="layer" inkscape:groupmode="layer" style="display:inline">
+    <path fill="none" stroke="purple(16)" stroke-width="0.1px" d="M 0 -1 L 1 0 L 2 -1 Z"/>
+  </g>
+</svg>"#,
+            width = width,
+            height = height
+        )
+    );
+    
+        
+    }
+
+    #[test]
+    fn test_calculate_min_max_(){
+        //Sample data set
+        let mut layer_polylines = BTreeMap::new();
+
+
+        let x1_values = vec![1.0, 2.0, 3.0, 4.0];
+        let y1_values = vec![1.0, 2.0, 3.0, 4.0];
+
+        let x2_values = vec![5.0, 6.0, 7.0, 8.0];
+        let y2_values = vec![5.0, 6.0, 7.0, 8.0];
+
+        let x3_values = vec![-1.0, -2.0, -3.0, -4.0];
+        let y3_values = vec![-1.0, -2.0, -3.0, -4.0];
+
+        let polyline1 = PolyLine::new(false, x1_values, y1_values);
+        let polyline2 = PolyLine::new(false, x2_values, y2_values);
+        let polyline3 = PolyLine::new(false, x3_values, y3_values);
+
+        layer_polylines.insert(String::from("layer1"), vec![polyline1, polyline2]);
+        layer_polylines.insert(String::from("layer2"), vec![polyline3]);
+
+        //Test case 1 : BTreeMap is empty
+        let empty: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
+        assert!(algorithms::calculate_min_max(&empty).is_none());
+
+        //Test case 2 : Non-Empty, use the sample data
+        let expected = (-4.0, -4.0, 8.0, 12.0, 12.0); //(min_x, min_y, max_y, width, height)
+        assert_eq!(algorithms::calculate_min_max(&layer_polylines).unwrap(), expected);
+
+
+    }

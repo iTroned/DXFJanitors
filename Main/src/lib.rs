@@ -4,4 +4,4 @@
 pub mod algorithms;
 pub mod dxfextract;
 pub mod dxfwrite;
-mod svgwrite;
+pub mod svgwrite;
