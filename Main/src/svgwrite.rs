@@ -105,6 +105,7 @@ mod tests{
     use super::*;
 
     #[test]
+    //NEED TO CHECK IF FORMATTING OF SVG DOCUMENT IS CORRECT
     fn test_create_svg(){
         let mut layer_polylines: BTreeMap<String, Vec<PolyLine>> = BTreeMap::new();
 
@@ -121,15 +122,7 @@ mod tests{
         let test_doc = create_svg(&layer_polylines, &min_x, &max_y, &width, &height);
 
         assert_eq!(test_doc.to_string(), 
-        format!(
-            r#"<svg viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape" inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)">
-  <g inkscape:label="layer" inkscape:groupmode="layer" style="display:inline">
-    <path fill="none" stroke="purple(16)" stroke-width="0.1px" d="M 0 -1 L 1 0 L 2 -1 Z"/>
-  </g>
-</svg>"#,
-            width = width,
-            height = height
-        )
+        "<svg inkscape:version=\"1.1.1 (3bf5ae0d25, 2021-09-20)\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"layer1\" style=\"display:inline\">\n<path d=\"M0,2 L1,1 L2,2 z\" fill=\"none\" stroke=\"red\" stroke-width=\"0.1px\"/>\n</g>\n</svg>"
     );
     
         

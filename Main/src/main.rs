@@ -557,7 +557,7 @@ impl eframe::App for SvgApp {
                     };
                     
                     tokio::spawn( async move{
-                        connect();
+                        //connect();
                     });
                     //connect();
                     
