@@ -848,6 +848,7 @@ impl eframe::App for SvgApp {
         });
         egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
             ui.horizontal(|ui|{
+                
                 ui.heading("File Selector");
                 //ui.set_min_size(ui.available_size());
                 if ui.button("Open file…").clicked() {
@@ -909,7 +910,7 @@ impl eframe::App for SvgApp {
                             info!("Opened file at: {}", path.display().to_string());
 
                         ui.separator();
-
+                        
 
                         }
                     }
@@ -971,11 +972,21 @@ impl eframe::App for SvgApp {
             /*let mut size = ui.available_size();
             size.x = size.x / 1.2;
             size.y = size.y / 1.2;*/
-                        
-            ScrollArea::both().show(ui, |ui|{
-                self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom as f32) //0.4 original size because of the Resolution (High resolution ==> sharpness)
-
-            });
+            if !self.is_rendering.read().unwrap().clone() {
+                ScrollArea::both().show(ui, |ui|{
+                    self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom as f32) //0.4 original size because of the Resolution (High resolution ==> sharpness)
+    
+                });
+            }
+            else {
+                ui.horizontal(|ui|{
+                    ui.label("Loading");
+                    ui.separator();
+                    ui.spinner();
+                });
+                
+            }
+            
             
             
             
