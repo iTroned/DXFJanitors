@@ -16,6 +16,10 @@ use log::{error, info, warn};
 use egui::{Slider};
 use std::time::Duration;
 use tokio::runtime::Runtime;
+use egui::FontFamily::Proportional;
+use egui::FontId;
+use egui::TextStyle::*;
+use egui::widgets::Button;
 
 enum UndoType {
     //hard type - change in layers loaded
@@ -460,18 +464,7 @@ impl eframe::App for SvgApp {
                     temp, Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), 
                     Some(self.max_angle_slider_value), Some(self.iterations_slider_value));
                     
-                }
-                if ui.button("+").clicked() {
-                    if self.current_zoom < MAX_ZOOM {
-                        self.current_zoom += 1;
-                    }
-                }
-                if ui.button("-").clicked() {
-                    if self.current_zoom > 1 {
-                        self.current_zoom -= 1;
-                    }
-                }
-                    
+                }                    
             });
 
             ui.separator();
@@ -635,7 +628,21 @@ impl eframe::App for SvgApp {
             }
             
         });
+
+        let mut style = (*ctx.style()).clone();
+                style.text_styles = [
+                    (Heading, FontId::new(30.0, Proportional)),
+                    (Name("Heading2".into()), FontId::new(25.0, Proportional)),
+                    (Name("Context".into()), FontId::new(23.0, Proportional)),
+                    (Body, FontId::new(13.0, Proportional)),
+                    (Monospace, FontId::new(14.0, Proportional)),
+                    (Button, FontId::new(15.0, Proportional)),
+                    (Small, FontId::new(10.0, Proportional)),
+                ].into();
+                ctx.set_style(style);
+
         egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
+            ui.set_min_width(350.0);
             ui.horizontal(|ui|{
                 
                 ui.heading("File Selector");
@@ -656,9 +663,27 @@ impl eframe::App for SvgApp {
                     
                         }
                     }
+                }
+
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {        
+                if ui.button("Zoom Out 
+            -").clicked() {
+                    if self.current_zoom > 1 {
+                        self.current_zoom -= 1;
+                    }
+                }
+                
+                if ui.button("Zoom In 
+        +").clicked() {
+                    if self.current_zoom < MAX_ZOOM {
+                        self.current_zoom += 1;
+                    }
                 }                
                 
             });
+        });
+
+            
             
             //sets the app to display the chosen path after picking
             if let Some(picked_path) = &self.picked_path {
