@@ -15,7 +15,7 @@ pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64
         "http://www.inkscape.org/namespaces/inkscape",
     )
         .set("inkscape:version", "1.1.1 (3bf5ae0d25, 2021-09-20)");
-    let line_width: f64 = (height/1000.0);
+    let line_width: f64 = height / 1000.0;
     let mut line_width_string = line_width.to_string();
     line_width_string.push_str("px");
     

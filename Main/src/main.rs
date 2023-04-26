@@ -10,7 +10,6 @@ use eframe::{egui, epaint::ahash::HashSet};
 use egui_extras::image::FitTo;
 use egui::{Color32, ScrollArea};
 use std::sync::{RwLock, mpsc::{Receiver, Sender}};
-use dxf::Drawing;
 use svg::Document;
 use std::{collections::{BTreeMap}};
 use log::{error, info, warn};
@@ -101,7 +100,6 @@ pub struct SvgApp {
 
     //info about the loaded file
     min_x: f64,
-    min_y: f64,
     max_y: f64,
     width: f64,
     height: f64,
@@ -134,7 +132,7 @@ pub struct SvgApp {
     //changable name used when merging
     merge_name: String,
     //keys that are being pressed at any given time
-    pressed_keys: HashSet<egui::Key>,
+    //pressed_keys: HashSet<egui::Key>,
     //handles zooming of the image
     current_zoom: i32,
     is_loading: RwLock<bool>,
@@ -160,9 +158,7 @@ impl Default for SvgApp {
             )
             .unwrap()),
             picked_path: Some("".to_string()),
-            //loaded_dxf: Drawing::new(),
             min_x: 0.0,
-            min_y: 0.0,
             max_y: 0.0,
             width: 0.0,
             height: 0.0,
@@ -183,7 +179,7 @@ impl Default for SvgApp {
             max_angle_slider_value: 360,
             max_distance_slider_value: 1000,
             merge_name: DEFAULT_MERGE_NAME.to_string(),
-            pressed_keys: HashSet::<egui::Key>::default(),
+            //pressed_keys: HashSet::<egui::Key>::default(),
             current_zoom: 1,
             is_loading: RwLock::new(false),
             //instance: SvgApp::default(),
@@ -246,87 +242,81 @@ impl eframe::App for SvgApp {
             *self.is_loading.write().unwrap() = false;
             info!("Opened new file!");
         }
-        //let mut fonts = FontDefinitions::default();
-        //key handler
+        //key and input handling
         ctx.input(|i| {
-            //let mut new_set = HashSet::<egui::Key>::default();
-            for event in i.events.clone() {
-                match event {
-                    egui::Event::Key{key, pressed, modifiers: _, repeat: _ } => {
-                        //println!("{:?} = {:?}", key, pressed);
-                        if pressed {
-                            self.pressed_keys.insert(key);
-                        }
-                        else{
-                            if self.pressed_keys.contains(&key){
-                                self.pressed_keys.remove(&key);
-                            }
-                        }
-                        
-                    },
-                    egui::Event::Text(_t) => { /*println!("Text = {:?}", t)*/ } _ => {}
-                }
-            }
             
-            //handles opening the file picker (copy-paste from the button)
-            if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::N){
-                if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
-                    self.picked_path = Some(path.display().to_string());
-
-                    //get extension to see if we want to update display
-                    let extension = path.extension().unwrap();
-                    if extension == "dxf" && !self.is_loading.read().unwrap().clone(){
-                        *self.is_loading.write().unwrap() = true;
-                        self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                        self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                        self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                        *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                        open_file(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
-                    }
-            }
-            //handles opening of save dialog from keybinds
-            else if self.pressed_keys.contains(&egui::Key::ArrowDown) && self.pressed_keys.contains(&egui::Key::S){
-                if !&self.picked_path.clone().unwrap().eq("") {
-                    let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
-                    
-                    if let Some(extension) = res{
-                        let filetype = extension.extension().unwrap(); //get extension
-                        let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
-
-                        //save dxf
-                        if filetype == "dxf"{
-                            let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                            for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
-                                out_layers.insert(layer_name.clone(), polylines.clone());
-                                //self.old_to_new_name.get(layer_name).unwrap().clone()
-                            }
-                            
-                            match dxfwrite::savedxf(out_layers, &filepath){
-                                Ok(_) => info!("DXF saved!"),
-                                Err(err) => panic!("Error while saving DXF: {}", err),
-                            };
-                        }
-                        //save svg
-                        else if filetype == "svg"{
-                            //error and logging handled in svgwrite
-                            svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
-                        }
-                        //pop-up message error
-                        else{
-                            let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
-                            error!("No extension chosen");
+            //keybinds with alt as modifier
+            if i.modifiers.alt {
+                //checks if user is scrolling
+                let scroll = i.scroll_delta.y;
+                if scroll != 0. {
+                    if scroll > 0. {
+                        if self.current_zoom < MAX_ZOOM {
+                            self.current_zoom += 1;
                         }
                     }
-                    
-
-                    
-                    
+                    else {
+                        if self.current_zoom > 1 {
+                            self.current_zoom -= 1;
+                        }
+                    }
                 }
             }
-            /*for key in &self.pressed_keys {
-                println!("{:?}", key);
-            }*/
-        }
+            //keybinds with ctrl as modifier
+            else if i.modifiers.ctrl {
+                //opens open dialogue
+                if i.keys_down.contains(&egui::Key::N){
+                    if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
+                        self.picked_path = Some(path.display().to_string());
+    
+                        //get extension to see if we want to update display
+                        let extension = path.extension().unwrap();
+                        if extension == "dxf" && !self.is_loading.read().unwrap().clone(){
+                            *self.is_loading.write().unwrap() = true;
+                            self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                            open_file(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
+                        }
+                    }
+                }
+                //opens save dialogue
+                else if i.keys_down.contains(&egui::Key::S){
+                    if !&self.picked_path.clone().unwrap().eq("") {
+                        let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
+                        
+                        if let Some(extension) = res{
+                            let filetype = extension.extension().unwrap(); //get extension
+                            let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
+    
+                            //save dxf
+                            if filetype == "dxf"{
+                                let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+                                for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
+                                    out_layers.insert(layer_name.clone(), polylines.clone());
+                                    //self.old_to_new_name.get(layer_name).unwrap().clone()
+                                }
+                                
+                                match dxfwrite::savedxf(out_layers, &filepath){
+                                    Ok(_) => info!("DXF saved!"),
+                                    Err(err) => panic!("Error while saving DXF: {}", err),
+                                };
+                            }
+                            //save svg
+                            else if filetype == "svg"{
+                                //error and logging handled in svgwrite
+                                svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
+                            }
+                            //pop-up message error
+                            else{
+                                let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
+                                error!("No extension chosen");
+                            }
+                        }
+                    }
+                }
+            }
         });
         
 
@@ -723,7 +713,7 @@ impl eframe::App for SvgApp {
         egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
             if !self.is_loading.read().unwrap().clone() {
                 ScrollArea::both().show(ui, |ui|{
-                    self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom as f32) //0.4 original size because of the Resolution (High resolution ==> sharpness)
+                    self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom as f32); //0.4 original size because of the Resolution (High resolution ==> sharpness)
     
                 });
             }
