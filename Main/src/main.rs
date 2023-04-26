@@ -629,6 +629,7 @@ impl eframe::App for SvgApp {
             
         });
 
+        //Stylesheet overwriting the default egui sheet
         let mut style = (*ctx.style()).clone();
                 style.text_styles = [
                     (Heading, FontId::new(30.0, Proportional)),
@@ -665,7 +666,10 @@ impl eframe::App for SvgApp {
                     }
                 }
 
+                //Creating a right to left layer including two buttons
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {        
+
+                 //Zoom out button going back towards 1   
                 if ui.button("Zoom Out 
             -").clicked() {
                     if self.current_zoom > 1 {
@@ -673,6 +677,7 @@ impl eframe::App for SvgApp {
                     }
                 }
                 
+                //Zoom in button going closer to max_zoom
                 if ui.button("Zoom In 
         +").clicked() {
                     if self.current_zoom < MAX_ZOOM {
