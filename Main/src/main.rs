@@ -423,7 +423,11 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
                 ui.vertical(|ui|{
-                if ui.button("Connect lines").clicked() && !*self.is_loading.read().unwrap(){
+
+                    let button8 = egui::Button::new("Connect lines");
+                    let minsize: Vec2 = [70.0, 30.0].into ();
+    
+                if ui.add(button8.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -443,7 +447,10 @@ impl eframe::App for SvgApp {
 
                 ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
-                if ui.button("Extend lines").clicked() && !*self.is_loading.read().unwrap() {
+                let button9 = egui::Button::new("Extend lines");
+                    let minsize: Vec2 = [70.0, 30.0].into ();
+    
+                if ui.add(button9.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -653,10 +660,10 @@ impl eframe::App for SvgApp {
                 style.text_styles = [
                     (Heading, FontId::new(30.0, Proportional)),
                     (Name("Heading2".into()), FontId::new(25.0, Proportional)),
-                    (Name("Context".into()), FontId::new(23.0, Proportional)),
+                    (Name("Context".into()), FontId::new(16.0, Proportional)),
                     (Body, FontId::new(15.0, Proportional)),
                     (Monospace, FontId::new(14.0, Proportional)),
-                    (Button, FontId::new(19.0, Proportional)),
+                    (Button, FontId::new(15.0, Proportional)),
                     (Small, FontId::new(10.0, Proportional)),
                 ].into();
                 ctx.set_style(style);
@@ -745,21 +752,13 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.horizontal(|ui|{
                 ui.heading("File Selector");
-                ui.separator();
-
-                let button1 = egui::Button::new("Open file");
-                let minsize: Vec2 = [70.0, 30.0].into ();
-
-                if ui.add(button1.min_size(minsize)).clicked() {
-                    open_file(self, ctx.clone());
-                }
 
                 //Creating a right to left layer including two buttons
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {        
 
                  //Zoom out button going back towards 1   
                  let button4 = egui::Button::new("Zoom out \n         -");
-                 let minsize: Vec2 = [90.0, 50.0].into ();
+                 let minsize: Vec2 = [90.0, 40.0].into ();
  
                  if ui.add(button4.min_size(minsize)).clicked() {
                     if self.current_zoom > 1 {
@@ -769,7 +768,7 @@ impl eframe::App for SvgApp {
                 
                 //Zoom in button going closer to max_zoom
                 let button2 = egui::Button::new("Zoom in \n         +");
-                let minsize: Vec2 = [90.0, 50.0].into ();
+                let minsize: Vec2 = [90.0, 40.0].into ();
 
                 if ui.add(button2.min_size(minsize)).clicked() {
                     if self.current_zoom < MAX_ZOOM {
@@ -794,7 +793,13 @@ impl eframe::App for SvgApp {
             
             //SAVE BUTTONS - opens a file dialog that makes you able to choose location and extension
             ui.horizontal(|ui| {
-            
+                
+                let button1 = egui::Button::new("Open file");
+                let minsize: Vec2 = [70.0, 30.0].into ();
+
+                if ui.add(button1.min_size(minsize)).clicked() {
+                    open_file(self, ctx.clone());
+                }
             
                 let button3 = egui::Button::new("Save file");
                 let minsize: Vec2 = [70.0, 30.0].into ();
