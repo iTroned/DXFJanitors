@@ -282,7 +282,7 @@ impl eframe::App for SvgApp {
         
 
         egui::SidePanel::right("right_panel").frame(_my_frame).show(ctx, |ui|{
-            ui.heading("Tools");
+            ui.heading("Actions");
             ui.separator();
             ui.set_min_size(ui.available_size());
             
@@ -303,8 +303,8 @@ impl eframe::App for SvgApp {
                 ui.vertical(|ui|{
 
                     let button8 = egui::Button::new("Connect lines");
-                    let minsize: Vec2 = [70.0, 30.0].into ();
-    
+                    let minsize: Vec2 = [70.0, 25.0].into ();    
+
                 if ui.add(button8.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
@@ -326,7 +326,7 @@ impl eframe::App for SvgApp {
                 ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
                 let button9 = egui::Button::new("Extend lines");
-                    let minsize: Vec2 = [70.0, 30.0].into ();
+                let minsize: Vec2 = [70.0, 25.0].into ();
     
                 if ui.add(button9.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
@@ -409,7 +409,7 @@ impl eframe::App for SvgApp {
             ui.horizontal(|ui|{
 
                 let button6 = egui::Button::new("Merge layer(s)");
-                let minsize: Vec2 = [70.0, 30.0].into ();
+                let minsize: Vec2 = [70.0, 25.0].into ();
 
                 if ui.add(button6.min_size(minsize)).clicked() {
                     //checks wheter the name is in use or not
@@ -453,8 +453,8 @@ impl eframe::App for SvgApp {
             
             self.last_toggled = self.toggled;
             let button5 = egui::Button::new("Update visuals");
-            let minsize: Vec2 = [70.0, 30.0].into ();
-
+            let minsize: Vec2 = [70.0, 25.0].into ();
+            
             if ui.add(button5.min_size(minsize)).clicked() {
                 let mut out_layers_name = BTreeMap::<String, Vec<PolyLine>>::default();
                 let mut old_name_map = BTreeMap::<String, String>::default();
@@ -506,7 +506,7 @@ impl eframe::App for SvgApp {
 
             ui.separator();
             let button7 = egui::Button::new("Delete layer(s)");
-            let minsize: Vec2 = [70.0, 30.0].into ();
+            let minsize: Vec2 = [70.0, 25.0].into ();
 
             if ui.add(button7.min_size(minsize)).clicked() {
                 let _msg = rfd::MessageDialog::new().set_title("ALERT!").set_description("Are you sure you want to delete this layer(s)").set_buttons(rfd::MessageButtons::OkCancel).show();
@@ -582,7 +582,7 @@ impl eframe::App for SvgApp {
                     }
 
                 });
-                ui.menu_button("Tools", |ui| {
+                ui.menu_button("Actions", |ui| {
                     if ui.button("Extend").clicked(){
 
                     }
