@@ -6,7 +6,7 @@ mod algorithms;
 mod svgwrite;
 mod dxfextract;
 use dxfextract::PolyLine;
-use eframe::{egui, epaint::ahash::HashSet};
+use eframe::{egui};
 use egui_extras::image::FitTo;
 use egui::{Color32, ScrollArea, Vec2};
 use std::sync::{RwLock, mpsc::{Receiver, Sender}};
@@ -19,7 +19,7 @@ use tokio::runtime::Runtime;
 use egui::FontFamily::Proportional;
 use egui::FontId;
 use egui::TextStyle::*;
-use egui::widgets::Button;
+//use egui::widgets::Button;
 use egui::menu;
 
 enum UndoType {
@@ -275,38 +275,7 @@ impl eframe::App for SvgApp {
                 }
                 //opens save dialogue
                 else if i.keys_down.contains(&egui::Key::S){
-                    if !&self.picked_path.clone().unwrap().eq("") {
-                        let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
-                        
-                        if let Some(extension) = res{
-                            let filetype = extension.extension().unwrap(); //get extension
-                            let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
-    
-                            //save dxf
-                            if filetype == "dxf"{
-                                let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                                for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
-                                    out_layers.insert(layer_name.clone(), polylines.clone());
-                                    //self.old_to_new_name.get(layer_name).unwrap().clone()
-                                }
-                                
-                                match dxfwrite::savedxf(out_layers, &filepath){
-                                    Ok(_) => info!("DXF saved!"),
-                                    Err(err) => panic!("Error while saving DXF: {}", err),
-                                };
-                            }
-                            //save svg
-                            else if filetype == "svg"{
-                                //error and logging handled in svgwrite
-                                svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
-                            }
-                            //pop-up message error
-                            else{
-                                let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
-                                error!("No extension chosen");
-                            }
-                        }
-                    }
+                    save_file(self, ctx.clone());
                 }
             }
         });
@@ -321,105 +290,14 @@ impl eframe::App for SvgApp {
 
 
             //ui.checkbox(&mut self.selected, "Test");
-            ui.horizontal(|ui|{
+            /*ui.horizontal(|ui|{
                 if ui.button("Undo").clicked() {
-                    if let Some(undo_type) = self.undo_stack.pop() {
-                        match undo_type {
-                            UndoType::Loaded => {
-                                if let Some(prev) = self.prev_l_layers.pop() {
-                                    self.redo_stack.push(UndoType::Loaded);
-                                    self.next_l_layers.push(self.loaded_layers.clone());
-                                    self.loaded_layers = prev;
-                                    let mut checkbox_map = BTreeMap::<String, bool>::default();
-                                    let mut old_name_map = BTreeMap::<String, String>::default();
-                                    for layer_name in self.loaded_layers.keys() {
-                                        checkbox_map.insert(layer_name.clone(), true);
-                                        old_name_map.insert(layer_name.clone(), layer_name.clone());
-                                    }
-        
-                                    self.checkbox_for_layer = checkbox_map;
-                                    self.old_to_new_name = old_name_map;
-                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
-                                }
-                            },
-                            UndoType::Current => {
-                                if let Some(prev) = self.prev_c_layers.pop() {
-                                    self.redo_stack.push(UndoType::Current);
-                                    self.next_c_layers.write().unwrap().push(self.current_layers.read().unwrap().clone());
-                                    *self.current_layers.write().unwrap() = prev;
-                                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
-                                        out_layers.insert(layer_name.clone(), polylines.clone());
-                                    }
-                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
-            
-                                    let mut temp = BTreeMap::<String, bool>::default();
-                                    for (name, _polylines) in &self.loaded_layers {
-                                        if self.current_layers.read().unwrap().contains_key(name){
-                                            temp.insert(name.clone(), true);
-                                            continue;
-                                        }
-                                        temp.insert(name.clone(), false);
-                                    }
-                                    self.checkbox_for_layer = temp;
-                                }
-                            },
-                        }
-                        info!("Undid 1 step");
-                    } 
+                    undo(self);
                 }
                 if ui.button("Redo").clicked() {
-                    if let Some(undo_type) = self.redo_stack.pop() {
-                        match undo_type {
-                            UndoType::Loaded => {
-                                if let Some(next) = self.next_l_layers.pop(){
-                                    self.undo_stack.push(UndoType::Loaded);
-                                    self.prev_l_layers.push(self.loaded_layers.clone());
-                                    self.loaded_layers = next;
-                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
-                                    let mut checkbox_map = BTreeMap::<String, bool>::default();
-                                    let mut old_name_map = BTreeMap::<String, String>::default();
-                                    for layer_name in self.loaded_layers.keys() {
-                                        checkbox_map.insert(layer_name.clone(), true);
-                                        old_name_map.insert(layer_name.clone(), layer_name.clone());
-                                    }
-        
-                                    self.checkbox_for_layer = checkbox_map;
-                                    self.old_to_new_name = old_name_map;
-                                }
-                            },
-                            UndoType::Current => {
-                                if let Some(next) = self.next_c_layers.write().unwrap().pop(){
-                                    self.undo_stack.push(UndoType::Current);
-                                    self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
-                                    *self.current_layers.write().unwrap() = next;
-                                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
-                                        out_layers.insert(layer_name.clone(), polylines.clone());
-                                    }
-                                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
-                                    let mut temp = BTreeMap::<String, bool>::default();
-                                    for (name, _polylines) in &self.loaded_layers {
-                                        if self.current_layers.read().unwrap().contains_key(name){
-                                            temp.insert(name.clone(), true);
-                                            continue;
-                                        }
-                                        temp.insert(name.clone(), false);
-                                    }
-                                    self.checkbox_for_layer = temp;
-                                }
-                            },
-                        }
-                        info!("Redid 1 step");
-                    }
-                    
-                    
+                    redo(self);
                 }
-            });
+            });*/
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
                 ui.vertical(|ui|{
@@ -671,7 +549,7 @@ impl eframe::App for SvgApp {
         egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    if ui.button("Open File...  Ctrl + N").clicked(){
+                    if ui.button("Open File... | Ctrl + N").clicked(){
                         if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
                             self.picked_path = Some(path.display().to_string());
                             
@@ -689,41 +567,17 @@ impl eframe::App for SvgApp {
                         }
 
                     }
-                    if ui.button("Save File...  Ctrl + S").clicked(){
-                        if !&self.picked_path.clone().unwrap().eq("") {
-                            let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
-                            
-                            if let Some(extension) = res{
-                                let filetype = extension.extension().unwrap(); //get extension
-                                let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
-        
-                                //save dxf
-                                if filetype == "dxf"{
-                                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
-                                        out_layers.insert(layer_name.clone(), polylines.clone());
-                                    }
-                                    match dxfwrite::savedxf(out_layers, &filepath){
-                                        Ok(_) => info!("DXF saved!"),
-                                        Err(err) => panic!("Error while saving DXF: {}", err),
-                                    };
-                                }
-                                //save svg
-                                else if filetype == "svg"{
-                                    svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
-                                }
-                                //pop-up message error
-                                else{
-                                    let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
-                                
-                                }
-                            }
-                            
-                            
-                        }
-                        if ui.button("Exit program").clicked(){
-                            
-                        }
+                    ui.separator();
+                    if ui.button("Save File As... | Ctrl + S").clicked(){
+                        save_file(self, ctx.clone());
+                    }
+                    ui.separator();
+                    if ui.button("Undo | Ctrl + Z").clicked() {
+                        undo(self);
+                    }
+                    ui.separator();
+                    if ui.button("Redo | Ctrl + Shift + Z").clicked() {
+                        redo(self);
                     }
 
                 });
@@ -731,23 +585,28 @@ impl eframe::App for SvgApp {
                     if ui.button("Extend").clicked(){
 
                     }
+                    ui.separator();
                     if ui.button("Connect").clicked(){
                         
                     }
 
                 });
                 ui.menu_button("Zoom", |ui| {
-                    if ui.button("Zoom in +... Alt + Scroll").clicked(){
-
+                    if ui.button("Zoom in").clicked(){
+                        if self.current_zoom < MAX_ZOOM as f32 {
+                            self.current_zoom += 0.1;
+                        }
                     }
-                    if ui.button("Zoom out +... Alt + Scroll").clicked(){
-                        
+                    if ui.button("Zoom out").clicked(){
+                        if self.current_zoom > 1.0 {
+                            self.current_zoom -= 0.1;
+                        }
                     }
 
                 });
 
             });
-            ui.separator();
+            /*ui.separator();
             ui.set_min_width(500.0);
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.horizontal(|ui|{
@@ -777,19 +636,19 @@ impl eframe::App for SvgApp {
                 }                
                 
             });
-        });
+        });*/
 
             
             
             //sets the app to display the chosen path after picking
-            if let Some(picked_path) = &self.picked_path {
+            /*if let Some(picked_path) = &self.picked_path {
                 ui.horizontal(|ui| {
                     ui.label("Chosen file:");
                     ui.monospace(picked_path);
                 });
-            }
+            }*/
             
-            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+            /*ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             
             //SAVE BUTTONS - opens a file dialog that makes you able to choose location and extension
             ui.horizontal(|ui| {
@@ -805,41 +664,11 @@ impl eframe::App for SvgApp {
                 let minsize: Vec2 = [70.0, 30.0].into ();
                 
                 if ui.add(button3.min_size(minsize)).clicked() {
-                if !&self.picked_path.clone().unwrap().eq("") {
-                    let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
-                    
-                    if let Some(extension) = res{
-                        let filetype = extension.extension().unwrap(); //get extension
-                        let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
-
-                        //save dxf
-                        if filetype == "dxf"{
-                            let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                            for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
-                                out_layers.insert(layer_name.clone(), polylines.clone());
-                            }
-                            match dxfwrite::savedxf(out_layers, &filepath){
-                                Ok(_) => info!("DXF saved!"),
-                                Err(err) => panic!("Error while saving DXF: {}", err),
-                            };
-                        }
-                        //save svg
-                        else if filetype == "svg"{
-                            svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
-                        }
-                        //pop-up message error
-                        else{
-                            let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
-                        
-                        }
-                    }
-                    
-                    
-                }
+                
                 
             }
             
-        });
+        });*/
 
         });
         //ui the last panel added. this one should only contain our svg if we decide to use multiple panels down the line
@@ -922,8 +751,133 @@ fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
     });
     
 }
-fn _save_file(app: &mut SvgApp, ctx: egui::Context) {
+fn save_file(app: &mut SvgApp, ctx: egui::Context) {
+    if !&app.picked_path.clone().unwrap().eq("") {
+        let res = rfd::FileDialog::new().set_file_name("export").set_directory(&app.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
+        
+        if let Some(extension) = res{
+            let filetype = extension.extension().unwrap(); //get extension
+            let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
 
+            //save dxf
+            if filetype == "dxf"{
+                let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+                for (layer_name, polylines) in app.current_layers.read().unwrap().clone(){
+                    out_layers.insert(layer_name.clone(), polylines.clone());
+                }
+                match dxfwrite::savedxf(out_layers, &filepath){
+                    Ok(_) => info!("DXF saved!"),
+                    Err(err) => panic!("Error while saving DXF: {}", err),
+                };
+            }
+            //save svg
+            else if filetype == "svg"{
+                svgwrite::save_svg(&filepath, &app.current_svg.read().unwrap());
+            }
+            //pop-up message error
+            else{
+                let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
+            
+            }
+        }
+        
+        
+    }
+}
+fn undo(app: &mut SvgApp) {
+    if let Some(undo_type) = app.undo_stack.pop() {
+        match undo_type {
+            UndoType::Loaded => {
+                if let Some(prev) = app.prev_l_layers.pop() {
+                    app.redo_stack.push(UndoType::Loaded);
+                    app.next_l_layers.push(app.loaded_layers.clone());
+                    app.loaded_layers = prev;
+                    let mut checkbox_map = BTreeMap::<String, bool>::default();
+                    let mut old_name_map = BTreeMap::<String, String>::default();
+                    for layer_name in app.loaded_layers.keys() {
+                        checkbox_map.insert(layer_name.clone(), true);
+                        old_name_map.insert(layer_name.clone(), layer_name.clone());
+                    }
+
+                    app.checkbox_for_layer = checkbox_map;
+                    app.old_to_new_name = old_name_map;
+                    *app.current_svg.write().unwrap() = svgwrite::create_svg(&app.loaded_layers, &app.min_x, &app.max_y, &app.width, &app.height);
+                    *app.svg_image.write().unwrap() = render_svg(&app.current_svg.read().unwrap());
+                }
+            },
+            UndoType::Current => {
+                if let Some(prev) = app.prev_c_layers.pop() {
+                    app.redo_stack.push(UndoType::Current);
+                    app.next_c_layers.write().unwrap().push(app.current_layers.read().unwrap().clone());
+                    *app.current_layers.write().unwrap() = prev;
+                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+                    for (layer_name, polylines) in app.current_layers.read().unwrap().clone(){
+                        out_layers.insert(layer_name.clone(), polylines.clone());
+                    }
+                    *app.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &app.min_x, &app.max_y, &app.width, &app.height);
+                    *app.svg_image.write().unwrap() = render_svg(&app.current_svg.read().unwrap());
+
+                    let mut temp = BTreeMap::<String, bool>::default();
+                    for (name, _polylines) in &app.loaded_layers {
+                        if app.current_layers.read().unwrap().contains_key(name){
+                            temp.insert(name.clone(), true);
+                            continue;
+                        }
+                        temp.insert(name.clone(), false);
+                    }
+                    app.checkbox_for_layer = temp;
+                }
+            },
+        }
+        info!("Undid 1 step");
+    } 
+}
+fn redo(app: &mut SvgApp) {
+    if let Some(undo_type) = app.redo_stack.pop() {
+        match undo_type {
+            UndoType::Loaded => {
+                if let Some(next) = app.next_l_layers.pop(){
+                    app.undo_stack.push(UndoType::Loaded);
+                    app.prev_l_layers.push(app.loaded_layers.clone());
+                    app.loaded_layers = next;
+                    *app.current_svg.write().unwrap() = svgwrite::create_svg(&app.loaded_layers, &app.min_x, &app.max_y, &app.width, &app.height);
+                    *app.svg_image.write().unwrap() = render_svg(&app.current_svg.read().unwrap());
+                    let mut checkbox_map = BTreeMap::<String, bool>::default();
+                    let mut old_name_map = BTreeMap::<String, String>::default();
+                    for layer_name in app.loaded_layers.keys() {
+                        checkbox_map.insert(layer_name.clone(), true);
+                        old_name_map.insert(layer_name.clone(), layer_name.clone());
+                    }
+
+                    app.checkbox_for_layer = checkbox_map;
+                    app.old_to_new_name = old_name_map;
+                }
+            },
+            UndoType::Current => {
+                if let Some(next) = app.next_c_layers.write().unwrap().pop(){
+                    app.undo_stack.push(UndoType::Current);
+                    app.prev_c_layers.push(app.current_layers.read().unwrap().clone());
+                    *app.current_layers.write().unwrap() = next;
+                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+                    for (layer_name, polylines) in app.current_layers.read().unwrap().clone(){
+                        out_layers.insert(layer_name.clone(), polylines.clone());
+                    }
+                    *app.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &app.min_x, &app.max_y, &app.width, &app.height);
+                    *app.svg_image.write().unwrap() = render_svg(&app.current_svg.read().unwrap());
+                    let mut temp = BTreeMap::<String, bool>::default();
+                    for (name, _polylines) in &app.loaded_layers {
+                        if app.current_layers.read().unwrap().contains_key(name){
+                            temp.insert(name.clone(), true);
+                            continue;
+                        }
+                        temp.insert(name.clone(), false);
+                    }
+                    app.checkbox_for_layer = temp;
+                }
+            },
+        }
+        info!("Redid 1 step");
+    }
 }
 
 fn render_svg(svg: &Document) -> egui_extras::RetainedImage {
