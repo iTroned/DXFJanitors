@@ -139,7 +139,7 @@ pub struct SvgApp {
     //keys that are being pressed at any given time
     //pressed_keys: HashSet<egui::Key>,
     //handles zooming of the image
-    current_zoom: i32,
+    current_zoom: f32,
     is_loading: RwLock<bool>,
     //instance: SvgApp,
 
@@ -185,7 +185,7 @@ impl Default for SvgApp {
             max_distance_slider_value: 1000,
             merge_name: DEFAULT_MERGE_NAME.to_string(),
             //pressed_keys: HashSet::<egui::Key>::default(),
-            current_zoom: 1,
+            current_zoom: 1.0,
             is_loading: RwLock::new(false),
             //instance: SvgApp::default(),
         }
@@ -256,13 +256,13 @@ impl eframe::App for SvgApp {
                 let scroll = i.scroll_delta.y;
                 if scroll != 0. {
                     if scroll > 0. {
-                        if self.current_zoom < MAX_ZOOM {
-                            self.current_zoom += 1;
+                        if self.current_zoom < MAX_ZOOM as f32{
+                            self.current_zoom += 0.1;
                         }
                     }
                     else {
-                        if self.current_zoom > 1 {
-                            self.current_zoom -= 1;
+                        if self.current_zoom > 1.0 {
+                            self.current_zoom -= 0.1;
                         }
                     }
                 }
@@ -761,8 +761,8 @@ impl eframe::App for SvgApp {
                  let minsize: Vec2 = [90.0, 40.0].into ();
  
                  if ui.add(button4.min_size(minsize)).clicked() {
-                    if self.current_zoom > 1 {
-                        self.current_zoom -= 1;
+                    if self.current_zoom > 1.0 {
+                        self.current_zoom -= 0.1;
                     }
                 }
                 
@@ -771,8 +771,8 @@ impl eframe::App for SvgApp {
                 let minsize: Vec2 = [90.0, 40.0].into ();
 
                 if ui.add(button2.min_size(minsize)).clicked() {
-                    if self.current_zoom < MAX_ZOOM {
-                        self.current_zoom += 1;
+                    if self.current_zoom < MAX_ZOOM as f32 {
+                        self.current_zoom += 0.1;
                     }
                 }                
                 
@@ -846,7 +846,7 @@ impl eframe::App for SvgApp {
         egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
             if !self.is_loading.read().unwrap().clone() {
                 ScrollArea::both().show(ui, |ui|{
-                    self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom as f32); //0.4 original size because of the Resolution (High resolution ==> sharpness)
+                    self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom); //0.4 original size because of the Resolution (High resolution ==> sharpness)
     
                 });
             }
