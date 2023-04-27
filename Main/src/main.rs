@@ -549,6 +549,7 @@ impl eframe::App for SvgApp {
         egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    ui.set_max_width(160.0);
                     if ui.button("Open File... | Ctrl + N").clicked(){
                         if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
                             self.picked_path = Some(path.display().to_string());
