@@ -408,7 +408,7 @@ impl eframe::App for SvgApp {
             self.last_toggled = self.toggled;
             ui.horizontal(|ui|{
 
-                let button6 = egui::Button::new("Merge");
+                let button6 = egui::Button::new("Merge layer(s)");
                 let minsize: Vec2 = [70.0, 30.0].into ();
 
                 if ui.add(button6.min_size(minsize)).clicked() {
@@ -452,7 +452,7 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             
             self.last_toggled = self.toggled;
-            let button5 = egui::Button::new("Rebuild svg");
+            let button5 = egui::Button::new("Update visuals");
             let minsize: Vec2 = [70.0, 30.0].into ();
 
             if ui.add(button5.min_size(minsize)).clicked() {
@@ -582,7 +582,7 @@ impl eframe::App for SvgApp {
                     }
 
                 });
-                ui.menu_button("Actions", |ui| {
+                ui.menu_button("Tools", |ui| {
                     if ui.button("Extend").clicked(){
 
                     }
