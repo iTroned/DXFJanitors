@@ -528,34 +528,17 @@ impl eframe::App for SvgApp {
             let minsize: Vec2 = [70.0, 25.0].into ();
 
             if ui.add(button7.min_size(minsize)).clicked() {
-                let _msg = rfd::MessageDialog::new().set_title("ALERT!").set_description("Are you sure you want to delete this layer(s)").set_buttons(rfd::MessageButtons::OkCancel).show();
-                if !_msg{
-                    //do not do anything, cancel delete
-                }
-                else{
-                    self.undo_stack.push(UndoType::Loaded);
-                    self.prev_l_layers.push(self.loaded_layers.clone());
-                    let mut counter = 0;
-                    for (layer_name, is_checked) in &self.checkbox_for_layer{
-                        if !is_checked {
-                            continue;
-                        }
-                        counter += 1;
-                        self.loaded_layers.remove(layer_name);
-                    }
-                    *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.loaded_layers, &self.min_x, &self.max_y, &self.width, &self.height);
-                    *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
-
-                    info!("Deleted {} layers", counter);
-                }
+                delete_layer(self);
             }
             
         });
+        
+        /*egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
+            
 
-        //Stylesheet overwriting the default egui sheet
-        
-        
-        egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
+        });*/
+        //ui the last panel added. this one should only contain our svg if we decide to use multiple panels down the line
+        egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     ui.set_max_width(240.0);
@@ -578,6 +561,7 @@ impl eframe::App for SvgApp {
                     }
 
                 });
+                ui.separator();
                 ui.menu_button("Tools", |ui| {
                     ui.set_max_width(240.0);
                     if ui.button("Extend").clicked(){
@@ -589,6 +573,7 @@ impl eframe::App for SvgApp {
                     }
 
                 });
+                ui.separator();
                 ui.menu_button("Zoom", |ui| {
                     ui.set_max_width(240.0);
                     if ui.button("Zoom in").clicked(){
@@ -604,84 +589,13 @@ impl eframe::App for SvgApp {
                     }
 
                 });
+                ui.separator();
                 ui.menu_button("Help", |ui| {
                     ui.set_max_width(240.0);
                 });
 
             });
-            /*ui.separator();
-            ui.set_min_width(500.0);
-            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
-            ui.horizontal(|ui|{
-                ui.heading("File Selector");
-
-                //Creating a right to left layer including two buttons
-                ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {        
-
-                 //Zoom out button going back towards 1   
-                 let button4 = egui::Button::new("Zoom out \n         -");
-                 let minsize: Vec2 = [90.0, 40.0].into ();
- 
-                 if ui.add(button4.min_size(minsize)).clicked() {
-                    if self.current_zoom > 2.0 {
-                        self.current_zoom -= 1.0;
-                    }
-                    else if self.current_zoom > 0.5{  
-                        self.current_zoom -= 0.4;
-                    }
-                }
-                
-                //Zoom in button going closer to max_zoom
-                let button2 = egui::Button::new("Zoom in \n         +");
-                let minsize: Vec2 = [90.0, 40.0].into ();
-
-                if ui.add(button2.min_size(minsize)).clicked() {
-                    if 2.0 > self.current_zoom && self.current_zoom > 0.0{
-                        self.current_zoom += 0.4;
-                    }
-                    else if self.current_zoom < MAX_ZOOM as f32 {
-                        self.current_zoom += 1.0;
-                    }
-                }                
-                
-            });
-        });*/
-
-            
-            
-            //sets the app to display the chosen path after picking
-            /*if let Some(picked_path) = &self.picked_path {
-                ui.horizontal(|ui| {
-                    ui.label("Chosen file:");
-                    ui.monospace(picked_path);
-                });
-            }*/
-            
-            /*ui.add_space(ui.spacing().item_spacing.y); // Add line space here
-            
-            //SAVE BUTTONS - opens a file dialog that makes you able to choose location and extension
-            ui.horizontal(|ui| {
-                
-                let button1 = egui::Button::new("Open file");
-                let minsize: Vec2 = [70.0, 30.0].into ();
-
-                if ui.add(button1.min_size(minsize)).clicked() {
-                    open_file(self, ctx.clone());
-                }
-            
-                let button3 = egui::Button::new("Save file");
-                let minsize: Vec2 = [70.0, 30.0].into ();
-                
-                if ui.add(button3.min_size(minsize)).clicked() {
-                
-                
-            }
-            
-        });*/
-
-        });
-        //ui the last panel added. this one should only contain our svg if we decide to use multiple panels down the line
-        egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
+            ui.separator();
             if !self.is_loading.read().unwrap().clone() {
                 ScrollArea::both().show(ui, |ui|{
                     self.svg_image.read().unwrap().show_scaled(ui, 0.4 * self.current_zoom); //0.4 original size because of the Resolution (High resolution ==> sharpness)
@@ -791,6 +705,28 @@ fn save_file(app: &mut SvgApp, ctx: egui::Context) {
         }
         
         
+    }
+}
+fn delete_layer(app: &mut SvgApp) {
+    let _msg = rfd::MessageDialog::new().set_title("ALERT!").set_description("Are you sure you want to delete this layer(s)").set_buttons(rfd::MessageButtons::OkCancel).show();
+    if !_msg{
+        //do not do anything, cancel delete
+    }
+    else{
+        app.undo_stack.push(UndoType::Loaded);
+        app.prev_l_layers.push(app.loaded_layers.clone());
+        let mut counter = 0;
+        for (layer_name, is_checked) in &app.checkbox_for_layer{
+            if !is_checked {
+                continue;
+            }
+            counter += 1;
+            app.loaded_layers.remove(layer_name);
+        }
+        *app.current_svg.write().unwrap() = svgwrite::create_svg(&app.loaded_layers, &app.min_x, &app.max_y, &app.width, &app.height);
+        *app.svg_image.write().unwrap() = render_svg(&app.current_svg.read().unwrap());
+
+        info!("Deleted {} layers", counter);
     }
 }
 fn undo(app: &mut SvgApp) {
