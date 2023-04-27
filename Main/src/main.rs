@@ -301,7 +301,7 @@ impl eframe::App for SvgApp {
         
 
         egui::SidePanel::right("right_panel").frame(_my_frame).show(ctx, |ui|{
-            ui.heading("Actions");
+            ui.heading("Tools");
             ui.separator();
             ui.set_min_size(ui.available_size());
             
