@@ -207,6 +207,17 @@ impl eframe::App for SvgApp {
             fill: Color32::from_rgb(23,26,29), //background fill color, affected by the margin
             stroke: egui::Stroke::new(2.0, Color32::BLACK),
         };
+        let mut style = (*ctx.style()).clone();
+        style.text_styles = [
+            (Heading, FontId::new(30.0, Proportional)),
+            (Name("Heading2".into()), FontId::new(25.0, Proportional)),
+            (Name("Context".into()), FontId::new(16.0, Proportional)),
+            (Body, FontId::new(15.0, Proportional)),
+            (Monospace, FontId::new(14.0, Proportional)),
+            (Button, FontId::new(15.0, Proportional)),
+            (Small, FontId::new(10.0, Proportional)),
+        ].into();
+        ctx.set_style(style);
         //when calculations are done when using connect
         if let Ok(response) = self.connect_receiver.try_recv() {
             info!("Connect done!");
@@ -270,12 +281,20 @@ impl eframe::App for SvgApp {
             //keybinds with ctrl as modifier
             else if i.modifiers.ctrl {
                 //opens open dialogue
-                if i.keys_down.contains(&egui::Key::N){
+                if i.modifiers.shift {
+                    if i.keys_down.contains(&egui::Key::Z){
+                        redo(self);
+                    }
+                }
+                else if i.keys_down.contains(&egui::Key::O){
                     open_file(self, ctx.clone());
                 }
                 //opens save dialogue
                 else if i.keys_down.contains(&egui::Key::S){
                     save_file(self, ctx.clone());
+                }
+                else if i.keys_down.contains(&egui::Key::Z){
+                    undo(self);
                 }
             }
         });
@@ -534,55 +553,33 @@ impl eframe::App for SvgApp {
         });
 
         //Stylesheet overwriting the default egui sheet
-        let mut style = (*ctx.style()).clone();
-                style.text_styles = [
-                    (Heading, FontId::new(30.0, Proportional)),
-                    (Name("Heading2".into()), FontId::new(25.0, Proportional)),
-                    (Name("Context".into()), FontId::new(16.0, Proportional)),
-                    (Body, FontId::new(15.0, Proportional)),
-                    (Monospace, FontId::new(14.0, Proportional)),
-                    (Button, FontId::new(15.0, Proportional)),
-                    (Small, FontId::new(10.0, Proportional)),
-                ].into();
-                ctx.set_style(style);
+        
         
         egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    ui.set_max_width(160.0);
-                    if ui.button("Open File... | Ctrl + N").clicked(){
-                        if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
-                            self.picked_path = Some(path.display().to_string());
-                            
-                            //get extension to see if we want to update display
-                            let extension = path.extension().unwrap();
-                            if extension == "dxf" && !self.is_loading.read().unwrap().clone(){
-                                //if we want to be able to undo to old opened files we need to fix something right here
-                                *self.is_loading.write().unwrap() = true;
-                                self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                                self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                                self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                                *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                                open_file_async(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
-                            }
-                        }
-
+                    ui.set_max_width(240.0);
+                    //ui.set_style(egui::Style::default());
+                    if ui.add(egui::Button::new("Open File...").shortcut_text("Ctrl + O")).clicked() {
+                        open_file(self, ctx.clone());
                     }
+                    
                     ui.separator();
-                    if ui.button("Save File As... | Ctrl + S").clicked(){
+                    if ui.add(egui::Button::new("Save File As...").shortcut_text("Ctrl + S")).clicked() {
                         save_file(self, ctx.clone());
                     }
                     ui.separator();
-                    if ui.button("Undo | Ctrl + Z").clicked() {
+                    if ui.add(egui::Button::new("Undo").shortcut_text("Ctrl + Z")).clicked() {
                         undo(self);
                     }
                     ui.separator();
-                    if ui.button("Redo | Ctrl + Shift + Z").clicked() {
+                    if ui.add(egui::Button::new("Redo").shortcut_text("Ctrl + Shift + Z")).clicked() {
                         redo(self);
                     }
 
                 });
                 ui.menu_button("Tools", |ui| {
+                    ui.set_max_width(240.0);
                     if ui.button("Extend").clicked(){
 
                     }
@@ -593,17 +590,22 @@ impl eframe::App for SvgApp {
 
                 });
                 ui.menu_button("Zoom", |ui| {
+                    ui.set_max_width(240.0);
                     if ui.button("Zoom in").clicked(){
                         if self.current_zoom < MAX_ZOOM as f32 {
                             self.current_zoom += 0.1;
                         }
                     }
+                    ui.separator();
                     if ui.button("Zoom out").clicked(){
                         if self.current_zoom > 0.2 {
                             self.current_zoom -= 0.1;
                         }
                     }
 
+                });
+                ui.menu_button("Help", |ui| {
+                    ui.set_max_width(240.0);
                 });
 
             });
