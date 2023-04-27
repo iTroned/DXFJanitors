@@ -476,18 +476,15 @@ impl eframe::App for SvgApp {
                 }                    
             });
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
-
             ui.separator();
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
             // SLIDERS
-            
-
             // wrap the slider in a vertical layout to move it to a new line
             ui.vertical(|ui| {
             //ui.add(egui::Label::new("Iterations"));
                 ui.add(Slider::new(&mut self.iterations_slider_value, 1..=10).text("Iterations (amount)"));
-                ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=1000).text("Max distance (%%)"));
+                ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=1000).text("Max distance (‰)"));
                 ui.add(Slider::new(&mut self.max_angle_slider_value, 1..=180).text("Max angle (°)"));
             // do not update value with slider_value when slider is change
             });
@@ -502,7 +499,9 @@ impl eframe::App for SvgApp {
             ui.separator();
             let mut checkboxes = BTreeMap::<String, bool>::default();
             let mut new_layer_names = BTreeMap::<String, String>::default();
-            egui::ScrollArea::vertical().show(ui, |ui|{
+            
+            //List of layers in sidepanel
+            egui::ScrollArea::vertical().max_height(500.0).show(ui, |ui|{
                 for (layer_name, _polylines)in self.loaded_layers.clone() {
                     let mut checkval = self.checkbox_for_layer.get(&layer_name).unwrap().clone();
                     //let mut new_name = layer_name.clone();
@@ -532,6 +531,53 @@ impl eframe::App for SvgApp {
                 ui.add_space(ui.spacing().item_spacing.y); // Add line space here
     
             });
+
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+            self.last_toggled = self.toggled;
+            ui.horizontal(|ui|{
+
+                let button6 = egui::Button::new("Merge");
+                let minsize: Vec2 = [70.0, 30.0].into ();
+
+                if ui.add(button6.min_size(minsize)).clicked() {
+                    //checks wheter the name is in use or not
+                        let mut full_layer = Vec::<PolyLine>::default();
+                        if self.merge_name == "".to_string() || self.loaded_layers.contains_key(&self.merge_name) && !self.checkbox_for_layer.get(&self.merge_name).unwrap(){
+                            let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("The new layer needs different name!").set_buttons(rfd::MessageButtons::Ok).show();
+                        }
+                        else{
+                            self.undo_stack.push(UndoType::Loaded);
+                            self.prev_l_layers.push(self.loaded_layers.clone());
+                            let mut counter = 0;
+                            for (layer_name, is_checked) in &self.checkbox_for_layer{
+                                if !is_checked {
+                                    continue;
+                                }
+                                counter += 1;
+                                full_layer.append(&mut self.loaded_layers.get(layer_name).unwrap().clone());
+                                self.loaded_layers.remove(layer_name);
+                            }
+                            self.loaded_layers.insert(self.merge_name.clone(), full_layer);
+                            self.checkbox_for_layer.insert(self.merge_name.clone(), true);
+                            let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
+                            for (name, val) in &self.loaded_layers {
+                                if self.checkbox_for_layer.get(name).unwrap().clone() {
+                                    temp.insert(name.clone(), val.clone());
+                                }
+                            }
+                            *self.current_layers.write().unwrap() = temp;
+                            self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
+                            self.merge_name = DEFAULT_MERGE_NAME.to_string();
+                            *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.current_layers.read().unwrap().clone(), &self.min_x, &self.max_y, &self.width, &self.height);
+                            *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
+
+                            info!("Merged {} layers", counter);
+                        }         
+                }
+                ui.add(egui::TextEdit::singleline(&mut self.merge_name));
+            });
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             
             self.last_toggled = self.toggled;
             let button5 = egui::Button::new("Rebuild svg");
@@ -586,52 +632,8 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
-            ui.horizontal(|ui|{
-
-                let button6 = egui::Button::new("Merge");
-                let minsize: Vec2 = [70.0, 30.0].into ();
-
-                if ui.add(button6.min_size(minsize)).clicked() {
-                    //checks wheter the name is in use or not
-                        let mut full_layer = Vec::<PolyLine>::default();
-                        if self.merge_name == "".to_string() || self.loaded_layers.contains_key(&self.merge_name) && !self.checkbox_for_layer.get(&self.merge_name).unwrap(){
-                            let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("The new layer needs different name!").set_buttons(rfd::MessageButtons::Ok).show();
-                        }
-                        else{
-                            self.undo_stack.push(UndoType::Loaded);
-                            self.prev_l_layers.push(self.loaded_layers.clone());
-                            let mut counter = 0;
-                            for (layer_name, is_checked) in &self.checkbox_for_layer{
-                                if !is_checked {
-                                    continue;
-                                }
-                                counter += 1;
-                                full_layer.append(&mut self.loaded_layers.get(layer_name).unwrap().clone());
-                                self.loaded_layers.remove(layer_name);
-                            }
-                            self.loaded_layers.insert(self.merge_name.clone(), full_layer);
-                            self.checkbox_for_layer.insert(self.merge_name.clone(), true);
-                            let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
-                            for (name, val) in &self.loaded_layers {
-                                if self.checkbox_for_layer.get(name).unwrap().clone() {
-                                    temp.insert(name.clone(), val.clone());
-                                }
-                            }
-                            *self.current_layers.write().unwrap() = temp;
-                            self.old_to_new_name.insert(self.merge_name.clone(), self.merge_name.clone());
-                            self.merge_name = DEFAULT_MERGE_NAME.to_string();
-                            *self.current_svg.write().unwrap() = svgwrite::create_svg(&self.current_layers.read().unwrap().clone(), &self.min_x, &self.max_y, &self.width, &self.height);
-                            *self.svg_image.write().unwrap() = render_svg(&self.current_svg.read().unwrap());
-
-                            info!("Merged {} layers", counter);
-                        }         
-                }
-                ui.add(egui::TextEdit::singleline(&mut self.merge_name));
-            });
-            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
-            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
-
-            let button7 = egui::Button::new("Delete layer");
+            ui.separator();
+            let button7 = egui::Button::new("Delete layer(s)");
             let minsize: Vec2 = [70.0, 30.0].into ();
 
             if ui.add(button7.min_size(minsize)).clicked() {
@@ -822,7 +824,7 @@ impl eframe::App for SvgApp {
             ui.horizontal(|ui| {
             
             
-                let button3 = egui::Button::new("Save file as");
+                let button3 = egui::Button::new("Save file");
                 let minsize: Vec2 = [70.0, 30.0].into ();
                 
                 if ui.add(button3.min_size(minsize)).clicked() {
