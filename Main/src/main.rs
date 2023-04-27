@@ -261,7 +261,7 @@ impl eframe::App for SvgApp {
                         }
                     }
                     else {
-                        if self.current_zoom > 1.0 {
+                        if self.current_zoom > 0.2 {
                             self.current_zoom -= 0.1;
                         }
                     }
@@ -761,8 +761,11 @@ impl eframe::App for SvgApp {
                  let minsize: Vec2 = [90.0, 40.0].into ();
  
                  if ui.add(button4.min_size(minsize)).clicked() {
-                    if self.current_zoom > 1.0 {
+                    if self.current_zoom > 2.0 {
                         self.current_zoom -= 1.0;
+                    }
+                    else if self.current_zoom > 0.5{  
+                        self.current_zoom -= 0.4;
                     }
                 }
                 
@@ -771,7 +774,10 @@ impl eframe::App for SvgApp {
                 let minsize: Vec2 = [90.0, 40.0].into ();
 
                 if ui.add(button2.min_size(minsize)).clicked() {
-                    if self.current_zoom < MAX_ZOOM as f32 {
+                    if 2.0 > self.current_zoom && self.current_zoom > 0.0{
+                        self.current_zoom += 0.4;
+                    }
+                    else if self.current_zoom < MAX_ZOOM as f32 {
                         self.current_zoom += 1.0;
                     }
                 }                
