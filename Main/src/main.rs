@@ -8,7 +8,7 @@ mod dxfextract;
 use dxfextract::PolyLine;
 use eframe::{egui, epaint::ahash::HashSet};
 use egui_extras::image::FitTo;
-use egui::{Color32, ScrollArea};
+use egui::{Color32, ScrollArea, Vec2};
 use std::sync::{RwLock, mpsc::{Receiver, Sender}};
 use svg::Document;
 use std::{collections::{BTreeMap}};
@@ -20,6 +20,7 @@ use egui::FontFamily::Proportional;
 use egui::FontId;
 use egui::TextStyle::*;
 use egui::widgets::Button;
+use egui::menu;
 
 enum UndoType {
     //hard type - change in layers loaded
@@ -641,13 +642,91 @@ impl eframe::App for SvgApp {
                     (Small, FontId::new(10.0, Proportional)),
                 ].into();
                 ctx.set_style(style);
-
+        
         egui::TopBottomPanel::top("top_panel").frame(_my_frame).show(ctx, |ui|{
+            menu::bar(ui, |ui| {
+                ui.menu_button("File", |ui| {
+                    if ui.button("Open File...  Ctrl + N").clicked(){
+                        if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
+                            self.picked_path = Some(path.display().to_string());
+                            
+                            //get extension to see if we want to update display
+                            let extension = path.extension().unwrap();
+                            if extension == "dxf" && !self.is_loading.read().unwrap().clone(){
+                                //if we want to be able to undo to old opened files we need to fix something right here
+                                *self.is_loading.write().unwrap() = true;
+                                self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                                self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                                self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                                *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+                                open_file(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
+                            }
+                        }
+
+                    }
+                    if ui.button("Save File...  Ctrl + S").clicked(){
+                        if !&self.picked_path.clone().unwrap().eq("") {
+                            let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
+                            
+                            if let Some(extension) = res{
+                                let filetype = extension.extension().unwrap(); //get extension
+                                let filepath = extension.as_path().as_os_str().to_os_string().into_string().unwrap(); //convert from &OsStr to String
+        
+                                //save dxf
+                                if filetype == "dxf"{
+                                    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+                                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
+                                        out_layers.insert(layer_name.clone(), polylines.clone());
+                                    }
+                                    match dxfwrite::savedxf(out_layers, &filepath){
+                                        Ok(_) => info!("DXF saved!"),
+                                        Err(err) => panic!("Error while saving DXF: {}", err),
+                                    };
+                                }
+                                //save svg
+                                else if filetype == "svg"{
+                                    svgwrite::save_svg(&filepath, &self.current_svg.read().unwrap());
+                                }
+                                //pop-up message error
+                                else{
+                                    let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
+                                
+                                }
+                            }
+                            
+                            
+                        }
+                        if ui.button("Exit program").clicked(){
+                            
+                        }
+                    }
+
+                });
+                ui.menu_button("Actions", |ui| {
+                    if ui.button("Extend").clicked(){
+
+                    }
+                    if ui.button("Connect").clicked(){
+                        
+                    }
+
+                });
+                ui.menu_button("Zoom", |ui| {
+                    if ui.button("Zoom in +... Alt + Scroll").clicked(){
+
+                    }
+                    if ui.button("Zoom out +... Alt + Scroll").clicked(){
+                        
+                    }
+
+                });
+
+            });
+            ui.separator();
             ui.set_min_width(350.0);
             ui.horizontal(|ui|{
-                
                 ui.heading("File Selector");
-                if ui.button("Open file…").clicked() {
+                if ui.button("Open File").clicked() {
                     if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
                         self.picked_path = Some(path.display().to_string());
                         
@@ -701,6 +780,8 @@ impl eframe::App for SvgApp {
             
             //SAVE BUTTONS - opens a file dialog that makes you able to choose location and extension
             ui.horizontal(|ui| {
+            
+            
             if ui.button("Save").clicked() {
                 if !&self.picked_path.clone().unwrap().eq("") {
                     let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
