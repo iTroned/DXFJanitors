@@ -599,7 +599,7 @@ impl eframe::App for SvgApp {
                         }
                     }
                     if ui.button("Zoom out").clicked(){
-                        if self.current_zoom > 1.0 {
+                        if self.current_zoom > 0.2 {
                             self.current_zoom -= 0.1;
                         }
                     }
