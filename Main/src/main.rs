@@ -271,20 +271,7 @@ impl eframe::App for SvgApp {
             else if i.modifiers.ctrl {
                 //opens open dialogue
                 if i.keys_down.contains(&egui::Key::N){
-                    if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
-                        self.picked_path = Some(path.display().to_string());
-    
-                        //get extension to see if we want to update display
-                        let extension = path.extension().unwrap();
-                        if extension == "dxf" && !self.is_loading.read().unwrap().clone(){
-                            *self.is_loading.write().unwrap() = true;
-                            self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            open_file(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
-                        }
-                    }
+                    open_file(self, ctx.clone());
                 }
                 //opens save dialogue
                 else if i.keys_down.contains(&egui::Key::S){
@@ -688,7 +675,7 @@ impl eframe::App for SvgApp {
                                 self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                                 self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
                                 *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                                open_file(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
+                                open_file_async(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
                             }
                         }
 
@@ -762,22 +749,7 @@ impl eframe::App for SvgApp {
                 let minsize: Vec2 = [70.0, 30.0].into ();
 
                 if ui.add(button1.min_size(minsize)).clicked() {
-                    if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
-                        self.picked_path = Some(path.display().to_string());
-                        
-                        //get extension to see if we want to update display
-                        let extension = path.extension().unwrap();
-                        if extension == "dxf" && !self.is_loading.read().unwrap().clone(){
-                            //if we want to be able to undo to old opened files we need to fix something right here
-                            *self.is_loading.write().unwrap() = true;
-                            self.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            self.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            self.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            *self.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-                            open_file(self.open_sender.clone(), ctx.clone(), self.picked_path.clone().unwrap());
-                    
-                        }
-                    }
+                    open_file(self, ctx.clone());
                 }
 
                 //Creating a right to left layer including two buttons
@@ -896,7 +868,23 @@ fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::
         ctx.request_repaint();
     });
 }
-fn open_file(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
+fn open_file(app: &mut SvgApp, ctx: egui::Context) {
+    if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
+        app.picked_path = Some(path.display().to_string());
+        //get extension to see if we want to update display
+        let extension = path.extension().unwrap();
+        if extension == "dxf" && !app.is_loading.read().unwrap().clone(){
+            //if we want to be able to undo to old opened files we need to fix something right here
+            *app.is_loading.write().unwrap() = true;
+            app.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+            app.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+            app.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+            *app.next_c_layers.write().unwrap() = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+            open_file_async(app.open_sender.clone(), ctx, path.display().to_string());
+        }
+    }
+}
+fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
     tokio::spawn(async move {
         info!("Started opening file!");
         let dxf = dxf::Drawing::load_file(dxf_path).expect("Not a valid file");
@@ -926,6 +914,9 @@ fn open_file(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
         ctx.request_repaint();
     });
     
+}
+fn _save_file(app: &mut SvgApp, ctx: egui::Context) {
+
 }
 
 fn render_svg(svg: &Document) -> egui_extras::RetainedImage {
