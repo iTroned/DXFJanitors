@@ -326,7 +326,8 @@ impl eframe::App for SvgApp {
         
 
         egui::SidePanel::right("right_panel").frame(_my_frame).show(ctx, |ui|{
-            ui.heading("Tools:");
+            ui.heading("Tools");
+            ui.separator();
             ui.set_min_size(ui.available_size());
             
 
@@ -431,7 +432,11 @@ impl eframe::App for SvgApp {
                     
                     
                 }
-                if ui.button("Connect").clicked() && !*self.is_loading.read().unwrap(){
+            });
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+
+                ui.vertical(|ui|{
+                if ui.button("Connect lines").clicked() && !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -448,7 +453,10 @@ impl eframe::App for SvgApp {
                     temp, Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), 
                     Some(self.max_angle_slider_value), Some(self.iterations_slider_value));
                 }
-                if ui.button("Extend").clicked() && !*self.is_loading.read().unwrap() {
+
+                ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+
+                if ui.button("Extend lines").clicked() && !*self.is_loading.read().unwrap() {
                     self.undo_stack.push(UndoType::Current);
                     self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
                     let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -467,8 +475,10 @@ impl eframe::App for SvgApp {
                     
                 }                    
             });
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
             ui.separator();
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
             // SLIDERS
             
@@ -486,7 +496,9 @@ impl eframe::App for SvgApp {
 
             
             ui.separator();
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.checkbox(&mut self.toggled, "Toggle All On/Off");
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.separator();
             let mut checkboxes = BTreeMap::<String, bool>::default();
             let mut new_layer_names = BTreeMap::<String, String>::default();
@@ -517,11 +529,15 @@ impl eframe::App for SvgApp {
                     self.checkbox_for_layer = checkboxes;
                 }
                 self.last_toggled = self.toggled;
-                
+                ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+    
             });
             
             self.last_toggled = self.toggled;
-            if ui.button("Rebuild svg").clicked() {
+            let button5 = egui::Button::new("Rebuild svg");
+            let minsize: Vec2 = [70.0, 30.0].into ();
+
+            if ui.add(button5.min_size(minsize)).clicked() {
                 let mut out_layers_name = BTreeMap::<String, Vec<PolyLine>>::default();
                 let mut old_name_map = BTreeMap::<String, String>::default();
                 for (name, val) in self.loaded_layers.clone() {
@@ -567,8 +583,15 @@ impl eframe::App for SvgApp {
 
                 info!("Rebuilt image");
             }
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+
             ui.horizontal(|ui|{
-                if ui.button("Merge").clicked(){
+
+                let button6 = egui::Button::new("Merge");
+                let minsize: Vec2 = [70.0, 30.0].into ();
+
+                if ui.add(button6.min_size(minsize)).clicked() {
                     //checks wheter the name is in use or not
                         let mut full_layer = Vec::<PolyLine>::default();
                         if self.merge_name == "".to_string() || self.loaded_layers.contains_key(&self.merge_name) && !self.checkbox_for_layer.get(&self.merge_name).unwrap(){
@@ -605,7 +628,13 @@ impl eframe::App for SvgApp {
                 }
                 ui.add(egui::TextEdit::singleline(&mut self.merge_name));
             });
-            if ui.button("Delete").clicked(){
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+
+            let button7 = egui::Button::new("Delete layer");
+            let minsize: Vec2 = [70.0, 30.0].into ();
+
+            if ui.add(button7.min_size(minsize)).clicked() {
                 let _msg = rfd::MessageDialog::new().set_title("ALERT!").set_description("Are you sure you want to delete this layer(s)").set_buttons(rfd::MessageButtons::OkCancel).show();
                 if !_msg{
                     //do not do anything, cancel delete
@@ -636,9 +665,9 @@ impl eframe::App for SvgApp {
                     (Heading, FontId::new(30.0, Proportional)),
                     (Name("Heading2".into()), FontId::new(25.0, Proportional)),
                     (Name("Context".into()), FontId::new(23.0, Proportional)),
-                    (Body, FontId::new(13.0, Proportional)),
+                    (Body, FontId::new(15.0, Proportional)),
                     (Monospace, FontId::new(14.0, Proportional)),
-                    (Button, FontId::new(15.0, Proportional)),
+                    (Button, FontId::new(19.0, Proportional)),
                     (Small, FontId::new(10.0, Proportional)),
                 ].into();
                 ctx.set_style(style);
@@ -723,10 +752,16 @@ impl eframe::App for SvgApp {
 
             });
             ui.separator();
-            ui.set_min_width(350.0);
+            ui.set_min_width(500.0);
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.horizontal(|ui|{
                 ui.heading("File Selector");
-                if ui.button("Open File").clicked() {
+                ui.separator();
+
+                let button1 = egui::Button::new("Open file");
+                let minsize: Vec2 = [70.0, 30.0].into ();
+
+                if ui.add(button1.min_size(minsize)).clicked() {
                     if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
                         self.picked_path = Some(path.display().to_string());
                         
@@ -749,16 +784,20 @@ impl eframe::App for SvgApp {
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::TOP), |ui| {        
 
                  //Zoom out button going back towards 1   
-                if ui.button("Zoom Out 
-            -").clicked() {
+                 let button4 = egui::Button::new("Zoom out \n         -");
+                 let minsize: Vec2 = [90.0, 50.0].into ();
+ 
+                 if ui.add(button4.min_size(minsize)).clicked() {
                     if self.current_zoom > 1 {
                         self.current_zoom -= 1;
                     }
                 }
                 
                 //Zoom in button going closer to max_zoom
-                if ui.button("Zoom In 
-        +").clicked() {
+                let button2 = egui::Button::new("Zoom in \n         +");
+                let minsize: Vec2 = [90.0, 50.0].into ();
+
+                if ui.add(button2.min_size(minsize)).clicked() {
                     if self.current_zoom < MAX_ZOOM {
                         self.current_zoom += 1;
                     }
@@ -777,12 +816,16 @@ impl eframe::App for SvgApp {
                 });
             }
             
+            ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             
             //SAVE BUTTONS - opens a file dialog that makes you able to choose location and extension
             ui.horizontal(|ui| {
             
             
-            if ui.button("Save").clicked() {
+                let button3 = egui::Button::new("Save file as");
+                let minsize: Vec2 = [70.0, 30.0].into ();
+                
+                if ui.add(button3.min_size(minsize)).clicked() {
                 if !&self.picked_path.clone().unwrap().eq("") {
                     let res = rfd::FileDialog::new().set_file_name("export").set_directory(&self.picked_path.clone().unwrap()).add_filter("dxf", &["dxf"]).add_filter("svg", &["svg"]).save_file();
                     
