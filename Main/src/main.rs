@@ -762,7 +762,7 @@ impl eframe::App for SvgApp {
  
                  if ui.add(button4.min_size(minsize)).clicked() {
                     if self.current_zoom > 1.0 {
-                        self.current_zoom -= 0.1;
+                        self.current_zoom -= 1.0;
                     }
                 }
                 
@@ -772,7 +772,7 @@ impl eframe::App for SvgApp {
 
                 if ui.add(button2.min_size(minsize)).clicked() {
                     if self.current_zoom < MAX_ZOOM as f32 {
-                        self.current_zoom += 0.1;
+                        self.current_zoom += 1.0;
                     }
                 }                
                 
