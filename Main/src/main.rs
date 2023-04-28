@@ -218,6 +218,7 @@ impl eframe::App for SvgApp {
             (Small, FontId::new(10.0, Proportional)),
         ].into();
         ctx.set_style(style);
+        
         //when calculations are done when using connect
         if let Ok(response) = self.connect_receiver.try_recv() {
             finished_connect(self, response);
@@ -271,15 +272,17 @@ impl eframe::App for SvgApp {
         
 
         egui::SidePanel::right("right_panel").resizable(false).frame(_my_frame).show(ctx, |ui|{
-            ui.heading("Tools");
+            ui.label(egui::RichText::new("Tools").heading().color(egui::Color32::from_rgb(255, 255, 255)));
+
             ui.separator();
             ui.set_min_size(ui.available_size());
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
                 ui.vertical(|ui|{
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
                     let button8 = egui::Button::new("Connect lines");
-                    let minsize: Vec2 = [70.0, 25.0].into ();    
+                    let minsize: Vec2 = [70.0, 22.0].into ();    
 
                 if ui.add(button8.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
@@ -300,9 +303,10 @@ impl eframe::App for SvgApp {
                 }
 
                 ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
                 let button9 = egui::Button::new("Extend lines");
-                let minsize: Vec2 = [70.0, 25.0].into ();
+                let minsize: Vec2 = [70.0, 22.0].into ();
     
                 if ui.add(button9.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
@@ -330,6 +334,7 @@ impl eframe::App for SvgApp {
             // SLIDERS
             // wrap the slider in a vertical layout to move it to a new line
             ui.vertical(|ui| {
+            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
             //ui.add(egui::Label::new("Iterations"));
                 ui.add(Slider::new(&mut self.iterations_slider_value, 1..=10).text("Iterations (amount)"));
                 ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=1000).text("Max distance (‰)"));
@@ -342,6 +347,7 @@ impl eframe::App for SvgApp {
             
             ui.separator();
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
             ui.checkbox(&mut self.toggled, "Toggle All On/Off");
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.separator();
@@ -384,8 +390,9 @@ impl eframe::App for SvgApp {
             self.last_toggled = self.toggled;
             ui.horizontal(|ui|{
 
+                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                 let button6 = egui::Button::new("Merge layer(s)");
-                let minsize: Vec2 = [70.0, 25.0].into ();
+                let minsize: Vec2 = [70.0, 22.0].into ();
 
                 if ui.add(button6.min_size(minsize)).clicked() {
                     //checks wheter the name is in use or not
@@ -428,8 +435,9 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             
             self.last_toggled = self.toggled;
+            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
             let button5 = egui::Button::new("Update visuals");
-            let minsize: Vec2 = [70.0, 25.0].into ();
+            let minsize: Vec2 = [70.0, 22.0].into ();
             
             if ui.add(button5.min_size(minsize)).clicked() {
                 let mut out_layers_name = BTreeMap::<String, Vec<PolyLine>>::default();
@@ -484,10 +492,10 @@ impl eframe::App for SvgApp {
 
             //Creating a Ui scope to specifically assign delete button with black text and red fill.
             ui.scope(|ui| {
-                ui.visuals_mut().override_text_color = Some(Color32::BLACK);
+                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
                 let button7 = egui::Button::new("Delete layer(s)");
-                let minsize: Vec2 = [70.0, 25.0].into ();
+                let minsize: Vec2 = [70.0, 22.0].into ();
 
                 if ui.add(button7.min_size(minsize).fill(Color32::from_rgb(245, 22, 22))).clicked() {
                     delete_layer(self);
@@ -505,6 +513,7 @@ impl eframe::App for SvgApp {
         egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     ui.set_max_width(240.0);
                     //ui.set_style(egui::Style::default());
                     if ui.add(egui::Button::new("Open File...").shortcut_text("Ctrl + O")).clicked() {
@@ -527,7 +536,10 @@ impl eframe::App for SvgApp {
                 });
                 
                 ui.separator();
+                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                 ui.menu_button("Zoom", |ui| {
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
+                    
                     ui.set_max_width(240.0);
                     if ui.add(egui::Button::new("Zoom in").shortcut_text("Ctrl + +")).clicked() {
                         zoom_in(self);
@@ -540,6 +552,7 @@ impl eframe::App for SvgApp {
                 });
                 ui.separator();
                 ui.menu_button("Tools", |ui| {
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     ui.set_max_width(240.0);
                     if ui.button("Extend").clicked(){
 
@@ -552,6 +565,7 @@ impl eframe::App for SvgApp {
                 });
                 ui.separator();
                 ui.menu_button("Help", |ui| {
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     ui.set_max_width(240.0);
                 });
 
