@@ -300,7 +300,7 @@ impl eframe::App for SvgApp {
         });
         
 
-        egui::SidePanel::right("right_panel").frame(_my_frame).show(ctx, |ui|{
+        egui::SidePanel::right("right_panel").resizable(false).frame(_my_frame).show(ctx, |ui|{
             ui.heading("Tools");
             ui.separator();
             ui.set_min_size(ui.available_size());
@@ -524,12 +524,19 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
             ui.separator();
-            let button7 = egui::Button::new("Delete layer(s)");
-            let minsize: Vec2 = [70.0, 25.0].into ();
 
-            if ui.add(button7.min_size(minsize)).clicked() {
-                delete_layer(self);
-            }
+            //Creating a Ui scope to specifically assign delete button with black text and red fill.
+            ui.scope(|ui| {
+                ui.visuals_mut().override_text_color = Some(Color32::BLACK);
+
+                let button7 = egui::Button::new("Delete layer(s)");
+                let minsize: Vec2 = [70.0, 25.0].into ();
+
+                if ui.add(button7.min_size(minsize).fill(Color32::from_rgb(245, 22, 22))).clicked() {
+                    delete_layer(self);
+                }
+            });
+            
             
         });
         
