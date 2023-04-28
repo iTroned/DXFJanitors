@@ -387,8 +387,7 @@ impl eframe::App for SvgApp {
                     self.checkbox_for_layer = checkboxes;
                 }
                 if self.checkbox_for_layer != self.last_checkbox_for_layer {
-                    //auto_rebuild(self);
-                    
+                    auto_rebuild(self);
                 }
                 self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
                 self.last_toggled = self.toggled;
@@ -517,8 +516,8 @@ impl eframe::App for SvgApp {
     }
     
 } 
+//handles checkboxing and renaming
 fn auto_rebuild(app: &mut SvgApp) {
-    println!("Rebuilding!");
     let mut out_layers_name = BTreeMap::<String, Vec<PolyLine>>::default();
     let mut old_name_map = BTreeMap::<String, String>::default();
     for (name, val) in app.loaded_layers.clone() {
@@ -558,6 +557,11 @@ fn auto_rebuild(app: &mut SvgApp) {
             out_layers.insert(layer_name.clone(), polylines.clone());
         }
     info!("Rebuilt image");
+}
+fn rebuild_async(app: &mut SvgApp) {
+    tokio::spawn(async move{
+
+    });
 }
 fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::Context, extend: bool, all_layers: BTreeMap<String, Vec<PolyLine>>, 
     affected_layers: BTreeMap<String, Vec<PolyLine>>, max_distance_in: Option<f64>, max_angle_in: Option<i32>, o_iterations: Option<i32>) {
@@ -634,13 +638,13 @@ fn finished_open(app: &mut SvgApp, response: RawOpen) {
     populate_maps(app, response.polylines.clone());
 
     app.loaded_layers = response.polylines.clone();
-    render_svg(app, &response.polylines);
-    *app.current_layers.write().unwrap() = response.polylines;
     app.min_x = response.min_x;
     app.max_y = response.max_y;
     app.width = response.width;
     app.height = response.height;
     *app.is_loading.write().unwrap() = false;
+    render_svg(app, &response.polylines);
+    *app.current_layers.write().unwrap() = response.polylines;
     info!("Opened new file!");
 }
 fn save_file(app: &mut SvgApp, ctx: egui::Context) {
@@ -829,13 +833,15 @@ fn zoom_out(app: &mut SvgApp) {
 }
 
 fn render_svg(app: &mut SvgApp, layers: &BTreeMap<String, Vec<PolyLine>>) {
-    *app.current_svg.write().unwrap() = svgwrite::create_svg(&layers, &app.min_x, &app.max_y, &app.width, &app.height);
+    let svg = svgwrite::create_svg(&layers, &app.min_x, &app.max_y, &app.width, &app.height);
+    
     *app.svg_image.write().unwrap() = egui_extras::RetainedImage::from_svg_bytes_with_size(
         "rendered_image", //path of svg file to display
-        app.current_svg.read().unwrap().to_string().as_bytes(), 
+        svg.to_string().as_bytes(), 
         FitTo::Size(3840, 2160), //display resolution (need to check performance effect)
     )
     .unwrap();
+    *app.current_svg.write().unwrap() = svg;
     info!("Rendered new svg");
 }
 fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
