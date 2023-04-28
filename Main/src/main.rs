@@ -127,6 +127,7 @@ pub struct SvgApp {
     prev_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     next_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     checkbox_for_layer: BTreeMap<String, bool>,
+    last_checkbox_for_layer: BTreeMap<String, bool>,
     //index for renaming
     old_to_new_name: BTreeMap::<String, String>,
     toggled: bool,
@@ -181,6 +182,7 @@ impl Default for SvgApp {
             prev_c_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
             next_c_layers: Vec::<BTreeMap::<String, Vec<PolyLine>>>::default(),
             checkbox_for_layer: BTreeMap::<String, bool>::default(),
+            last_checkbox_for_layer: BTreeMap::<String, bool>::default(),
             old_to_new_name: BTreeMap::<String, String>::default(),
             toggled: true,
             last_toggled: true,
@@ -222,7 +224,6 @@ impl eframe::App for SvgApp {
             (Small, FontId::new(10.0, Proportional)),
         ].into();
         ctx.set_style(style);
-        
         //when calculations are done when using connect
         if let Ok(response) = self.connect_receiver.try_recv() {
             finished_connect(self, response);
@@ -230,6 +231,9 @@ impl eframe::App for SvgApp {
         //when calculations are done after opening file
         if let Ok(response) = self.open_receiver.try_recv() {
             finished_open(self, response);
+        }
+        if let Ok(response) = self.save_receiver.try_recv() {
+            finished_save(self, response);
         }
         //key and input handling
         ctx.input(|i| {
@@ -276,17 +280,15 @@ impl eframe::App for SvgApp {
         
 
         egui::SidePanel::right("right_panel").resizable(false).frame(_my_frame).show(ctx, |ui|{
-            ui.label(egui::RichText::new("Tools").heading().color(egui::Color32::from_rgb(255, 255, 255)));
-
+            ui.heading("Tools");
             ui.separator();
             ui.set_min_size(ui.available_size());
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
                 ui.vertical(|ui|{
-                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
                     let button8 = egui::Button::new("Connect lines");
-                    let minsize: Vec2 = [70.0, 22.0].into ();    
+                    let minsize: Vec2 = [70.0, 25.0].into ();    
 
                 if ui.add(button8.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
@@ -307,10 +309,9 @@ impl eframe::App for SvgApp {
                 }
 
                 ui.add_space(ui.spacing().item_spacing.y); // Add line space here
-                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
                 let button9 = egui::Button::new("Extend lines");
-                let minsize: Vec2 = [70.0, 22.0].into ();
+                let minsize: Vec2 = [70.0, 25.0].into ();
     
                 if ui.add(button9.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
                     self.undo_stack.push(UndoType::Current);
@@ -338,7 +339,6 @@ impl eframe::App for SvgApp {
             // SLIDERS
             // wrap the slider in a vertical layout to move it to a new line
             ui.vertical(|ui| {
-            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
             //ui.add(egui::Label::new("Iterations"));
                 ui.add(Slider::new(&mut self.iterations_slider_value, 1..=10).text("Iterations (amount)"));
                 ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=1000).text("Max distance (‰)"));
@@ -351,7 +351,6 @@ impl eframe::App for SvgApp {
             
             ui.separator();
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
-            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
             ui.checkbox(&mut self.toggled, "Toggle All On/Off");
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.separator();
@@ -360,6 +359,7 @@ impl eframe::App for SvgApp {
             
             //List of layers in sidepanel
             egui::ScrollArea::vertical().max_height(500.0).show(ui, |ui|{
+                self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
                 for (layer_name, _polylines)in self.loaded_layers.clone() {
                     let mut checkval = self.checkbox_for_layer.get(&layer_name).unwrap().clone();
                     //let mut new_name = layer_name.clone();
@@ -376,6 +376,7 @@ impl eframe::App for SvgApp {
                 self.checkbox_for_layer = checkboxes;
                 self.old_to_new_name = new_layer_names;
                 
+                
 
                 //code for toggle on/off for all layers
                 if self.toggled != self.last_toggled {
@@ -385,6 +386,11 @@ impl eframe::App for SvgApp {
                     }
                     self.checkbox_for_layer = checkboxes;
                 }
+                if self.checkbox_for_layer != self.last_checkbox_for_layer {
+                    //auto_rebuild(self);
+                    
+                }
+                self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
                 self.last_toggled = self.toggled;
                 ui.add_space(ui.spacing().item_spacing.y); // Add line space here
     
@@ -394,9 +400,8 @@ impl eframe::App for SvgApp {
             self.last_toggled = self.toggled;
             ui.horizontal(|ui|{
 
-                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                 let button6 = egui::Button::new("Merge layer(s)");
-                let minsize: Vec2 = [70.0, 22.0].into ();
+                let minsize: Vec2 = [70.0, 25.0].into ();
 
                 if ui.add(button6.min_size(minsize)).clicked() {
                     merge_layers(self);
@@ -407,55 +412,12 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             
             self.last_toggled = self.toggled;
-            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
-            let button5 = egui::Button::new("Update visuals");
-            let minsize: Vec2 = [70.0, 22.0].into ();
+            /*let button5 = egui::Button::new("Update visuals");
+            let minsize: Vec2 = [70.0, 25.0].into ();*/
             
-            if ui.add(button5.min_size(minsize)).clicked() {
-                let mut out_layers_name = BTreeMap::<String, Vec<PolyLine>>::default();
-                let mut old_name_map = BTreeMap::<String, String>::default();
-                for (name, val) in self.loaded_layers.clone() {
-                    let mut new_name = self.old_to_new_name.get(&name).unwrap().clone();
-                    while out_layers_name.contains_key(&new_name){
-                        new_name.push('_');
-                    }
-                    if new_name != name {
-                        self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&name).unwrap().clone());
-                        self.checkbox_for_layer.remove(&name);
-                        out_layers_name.insert(new_name.clone(), val.clone());
-                        old_name_map.insert(new_name.clone(), new_name.clone());
-                    }
-                    else{
-                        out_layers_name.insert(name.clone(), val.clone());
-                        old_name_map.insert(name.clone(), name.clone());
-                    }
-                }
-                self.loaded_layers = out_layers_name;
-                *self.current_layers.write().unwrap() = self.loaded_layers.clone();
-                self.old_to_new_name = old_name_map;
-
-                //rebuild part
-                let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
-                for (name, checked) in &self.checkbox_for_layer {
-                    if checked.clone(){
-                        temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
-                    }
-                }
-                self.undo_stack.push(UndoType::Current);
-                self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
-                *self.current_layers.write().unwrap() = temp;
-                self.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+            /*if ui.add(button5.min_size(minsize)).clicked() {
                 
-                //TODO fix a better way to store previous files, so we can remove the first of them after a certain treshold
-                //println!("Length of DXF-vector: {}", self.previous_dxfs.len());
-                let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-                    for (layer_name, polylines) in self.current_layers.read().unwrap().clone(){
-                        out_layers.insert(layer_name.clone(), polylines.clone());
-                    }
-                
-
-                info!("Rebuilt image");
-            }
+            }*/
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
 
@@ -463,10 +425,10 @@ impl eframe::App for SvgApp {
 
             //Creating a Ui scope to specifically assign delete button with black text and red fill.
             ui.scope(|ui| {
-                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
+                ui.visuals_mut().override_text_color = Some(Color32::BLACK);
 
                 let button7 = egui::Button::new("Delete layer(s)");
-                let minsize: Vec2 = [70.0, 22.0].into ();
+                let minsize: Vec2 = [70.0, 25.0].into ();
 
                 if ui.add(button7.min_size(minsize).fill(Color32::from_rgb(245, 22, 22))).clicked() {
                     delete_layer(self);
@@ -484,7 +446,6 @@ impl eframe::App for SvgApp {
         egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
             menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     ui.set_max_width(240.0);
                     //ui.set_style(egui::Style::default());
                     if ui.add(egui::Button::new("Open File...").shortcut_text("Ctrl + O")).clicked() {
@@ -507,10 +468,7 @@ impl eframe::App for SvgApp {
                 });
                 
                 ui.separator();
-                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                 ui.menu_button("Zoom", |ui| {
-                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
-                    
                     ui.set_max_width(240.0);
                     if ui.add(egui::Button::new("Zoom in").shortcut_text("Ctrl + +")).clicked() {
                         zoom_in(self);
@@ -523,7 +481,6 @@ impl eframe::App for SvgApp {
                 });
                 ui.separator();
                 ui.menu_button("Tools", |ui| {
-                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     ui.set_max_width(240.0);
                     if ui.button("Extend").clicked(){
 
@@ -536,7 +493,6 @@ impl eframe::App for SvgApp {
                 });
                 ui.separator();
                 ui.menu_button("Help", |ui| {
-                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     ui.set_max_width(240.0);
                 });
 
@@ -561,6 +517,48 @@ impl eframe::App for SvgApp {
     }
     
 } 
+fn auto_rebuild(app: &mut SvgApp) {
+    println!("Rebuilding!");
+    let mut out_layers_name = BTreeMap::<String, Vec<PolyLine>>::default();
+    let mut old_name_map = BTreeMap::<String, String>::default();
+    for (name, val) in app.loaded_layers.clone() {
+        let mut new_name = app.old_to_new_name.get(&name).unwrap().clone();
+        while out_layers_name.contains_key(&new_name){
+            new_name.push('_');
+        }
+        if new_name != name {
+            app.checkbox_for_layer.insert(new_name.clone(), app.checkbox_for_layer.get(&name).unwrap().clone());
+            app.checkbox_for_layer.remove(&name);
+            out_layers_name.insert(new_name.clone(), val.clone());
+            old_name_map.insert(new_name.clone(), new_name.clone());
+        }
+        else{
+            out_layers_name.insert(name.clone(), val.clone());
+            old_name_map.insert(name.clone(), name.clone());
+        }
+    }
+    app.loaded_layers = out_layers_name;
+    *app.current_layers.write().unwrap() = app.loaded_layers.clone();
+    app.old_to_new_name = old_name_map;
+
+    //rebuild part
+    let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
+    for (name, checked) in &app.checkbox_for_layer {
+        if checked.clone(){
+            temp.insert(name.clone(), app.loaded_layers.get(name).unwrap().clone());
+        }
+    }
+    app.undo_stack.push(UndoType::Current);
+    app.prev_c_layers.push(app.current_layers.read().unwrap().clone());
+    *app.current_layers.write().unwrap() = temp;
+    app.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+    
+    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
+        for (layer_name, polylines) in app.current_layers.read().unwrap().clone(){
+            out_layers.insert(layer_name.clone(), polylines.clone());
+        }
+    info!("Rebuilt image");
+}
 fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::Context, extend: bool, all_layers: BTreeMap<String, Vec<PolyLine>>, 
     affected_layers: BTreeMap<String, Vec<PolyLine>>, max_distance_in: Option<f64>, max_angle_in: Option<i32>, o_iterations: Option<i32>) {
     tokio::spawn(async move {
@@ -679,9 +677,11 @@ fn save_file_async(tx: Sender<bool>, ctx: egui::Context, extension: PathBuf, lay
         else{
             let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while saving. Did you chose the correct extension?").set_buttons(rfd::MessageButtons::Ok).show();
         }
+        ctx.request_repaint();
     });
 }
-fn finished_save(app: &mut SvgApp) {
+//code that will show a popup when save is finished
+fn finished_save(app: &mut SvgApp, _: bool) {
 
 }
 fn delete_layer(app: &mut SvgApp) {
@@ -771,7 +771,8 @@ fn undo(app: &mut SvgApp) {
                         }
                         temp.insert(name.clone(), false);
                     }
-                    app.checkbox_for_layer = temp;
+                    app.checkbox_for_layer = temp.clone();
+                    //app.last_checkbox_for_layer = temp;
                 }
             },
         }
@@ -807,7 +808,8 @@ fn redo(app: &mut SvgApp) {
                         }
                         temp.insert(name.clone(), false);
                     }
-                    app.checkbox_for_layer = temp;
+                    app.checkbox_for_layer = temp.clone();
+                    //app.last_checkbox_for_layer = temp;
                     render_svg(app, &out_layers);
                 }
             },
@@ -844,6 +846,7 @@ fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
         old_name_map.insert(layer_name.clone(), layer_name.clone());
     }
         
+    app.checkbox_for_layer = checkbox_map.clone();
     app.checkbox_for_layer = checkbox_map;
     app.old_to_new_name = old_name_map;
 }
