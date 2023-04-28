@@ -1,1 +1,1 @@
-D:\VSCode\FFS\DXFJanitors\Main\target\debug\libdxf_janitors.rlib: D:\VSCode\FFS\DXFJanitors\Main\src\lib.rs
+D:\VSCode\fkfkf\DXFJanitors\Main\target\debug\libdxf_janitors.rlib: D:\VSCode\fkfkf\DXFJanitors\Main\src\algorithms.rs D:\VSCode\fkfkf\DXFJanitors\Main\src\dxfextract.rs D:\VSCode\fkfkf\DXFJanitors\Main\src\dxfwrite.rs D:\VSCode\fkfkf\DXFJanitors\Main\src\lib.rs D:\VSCode\fkfkf\DXFJanitors\Main\src\savedxf.py D:\VSCode\fkfkf\DXFJanitors\Main\src\svgwrite.rs
