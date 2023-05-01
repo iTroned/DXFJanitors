@@ -8,3 +8,5 @@ When combining the layers we will get duplicate values for the same point. The a
 
 Renaming
 Sorting while renaming confuses the user
+
+Connect and extend functions: Affects unchecked layers
