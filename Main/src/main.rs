@@ -297,6 +297,7 @@ impl eframe::App for SvgApp {
             ui.separator();
             ui.set_min_size(ui.available_size());
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
+            ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
                 ui.vertical(|ui|{
 
@@ -458,7 +459,7 @@ impl eframe::App for SvgApp {
 
             //Creating a Ui scope to specifically assign delete button with black text and red fill.
             ui.scope(|ui| {
-                ui.visuals_mut().override_text_color = Some(Color32::BLACK);
+                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
 
                 let button7 = egui::Button::new("Delete layer(s)");
                 let minsize: Vec2 = [70.0, 25.0].into ();
@@ -478,7 +479,9 @@ impl eframe::App for SvgApp {
         //ui the last panel added. this one should only contain our svg if we decide to use multiple panels down the line
         egui::CentralPanel::default().frame(_my_frame).show(ctx, |ui| {
             menu::bar(ui, |ui| {
+                ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                 ui.menu_button("File", |ui| {
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     ui.set_max_width(240.0);
                     //ui.set_style(egui::Style::default());
                     if ui.add(egui::Button::new("Open File...").shortcut_text("Ctrl + O")).clicked() {
