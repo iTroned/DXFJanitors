@@ -5,6 +5,7 @@ mod dxfwrite;
 mod algorithms;
 mod svgwrite;
 mod dxfextract;
+use dxf::Color;
 use dxfextract::PolyLine;
 use eframe::{egui};
 use egui_extras::image::FitTo;
@@ -134,6 +135,7 @@ pub struct SvgApp {
     prev_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     next_c_layers: Vec<BTreeMap<String, Vec<PolyLine>>>,
     checkbox_for_layer: BTreeMap<String, bool>,
+    color_for_layer: BTreeMap::<String, [f32; 3]>,
     last_checkbox_for_layer: BTreeMap<String, bool>,
     //index for renaming
     //old_to_new_name: BTreeMap::<String, String>,
@@ -192,6 +194,7 @@ impl Default for SvgApp {
             prev_c_layers: Vec::<BTreeMap<String, Vec<PolyLine>>>::default(),
             next_c_layers: Vec::<BTreeMap::<String, Vec<PolyLine>>>::default(),
             checkbox_for_layer: BTreeMap::<String, bool>::default(),
+            color_for_layer: BTreeMap::<String, [f32; 3]>::default(),
             last_checkbox_for_layer: BTreeMap::<String, bool>::default(),
             //old_to_new_name: BTreeMap::<String, String>::default(),
             toggled: true,
@@ -369,7 +372,7 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.separator();
             
-            
+            let mut colors = vec!["purple(16)","navy(16)","seagreen","darkslategrey","black","darkorchid","indianred","darkolivegreen","forestgreen", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "darkred", "chocolate", "blueviolet", "purple", "orange", "green", "blue", "red"];
             //List of layers in sidepanel
             //also handling update of checkboxes and renaming here
             egui::ScrollArea::vertical().max_height(500.0).show(ui, |ui|{
@@ -378,10 +381,12 @@ impl eframe::App for SvgApp {
                 self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
                 for (layer, polylines) in self.loaded_layers.clone() {
                     let mut checkval = self.checkbox_for_layer.get(&layer).unwrap().clone();
+                    let mut color = self.color_for_layer.get(&layer).unwrap().clone();
                     let mut new_name = layer.clone();
                     ui.horizontal(|ui|{
                         ui.checkbox(&mut checkval, "");
                         ui.add(egui::TextEdit::singleline(&mut new_name));
+                        ui.color_edit_button_rgb(&mut color);
                     });
                     
                     if new_name != layer {
@@ -395,21 +400,8 @@ impl eframe::App for SvgApp {
                     }
                     checkboxes.insert(new_name, checkval);
                 }
-                /*for (layer_name, _polylines)in self.loaded_layers.clone() {
-                    let mut checkval = self.checkbox_for_layer.get(&layer_name).unwrap().clone();
-                    //let mut new_name = layer_name.clone();
-                    //println!("{}", &layer_name);
-                    let mut new_name = self.old_to_new_name.get(&layer_name).unwrap().clone();
-                    ui.horizontal(|ui|{
-                        ui.checkbox(&mut checkval, "");
-                        ui.add(egui::TextEdit::singleline(&mut new_name));
-                    });
-                    checkboxes.insert(layer_name.clone(), checkval);
-                    new_layer_names.insert(layer_name.clone(), new_name);
-                    ui.separator();
-                }*/
+                
                 self.checkbox_for_layer = checkboxes;
-                //self.old_to_new_name = new_layer_names;
                 
                 
 
@@ -859,15 +851,26 @@ fn zoom_out(app: &mut SvgApp) {
 
 
 fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
+    let mut colors = vec![
+        [255., 255., 255.],
+        [255., 0., 0.],
+        [0., 255., 0.],
+        [0., 0., 255.],
+        ];
     let mut checkbox_map = BTreeMap::<String, bool>::default();
+    let mut color_map = BTreeMap::<String, [f32; 3]>::default();
     //let mut old_name_map = BTreeMap::<String, String>::default();
     for layer_name in polylines.keys() {
+        let color = match colors.pop() {
+            Some(color) => color,
+            None => [0., 0., 0.],
+        };
         checkbox_map.insert(layer_name.clone(), true);
+        color_map.insert(layer_name.clone(), color);
         //old_name_map.insert(layer_name.clone(), layer_name.clone());
     }
-        
-    app.checkbox_for_layer = checkbox_map.clone();
     app.checkbox_for_layer = checkbox_map;
+    app.color_for_layer = color_map;
     //app.old_to_new_name = old_name_map;
 }
 
