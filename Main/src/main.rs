@@ -137,6 +137,7 @@ pub struct SvgApp {
     checkbox_for_layer: BTreeMap<String, bool>,
     color_for_layer: BTreeMap::<String, [f32; 3]>,
     last_checkbox_for_layer: BTreeMap<String, bool>,
+    last_color_for_layer: BTreeMap::<String, [f32; 3]>,
     //index for renaming
     //old_to_new_name: BTreeMap::<String, String>,
     toggled: bool,
@@ -196,7 +197,7 @@ impl Default for SvgApp {
             checkbox_for_layer: BTreeMap::<String, bool>::default(),
             color_for_layer: BTreeMap::<String, [f32; 3]>::default(),
             last_checkbox_for_layer: BTreeMap::<String, bool>::default(),
-            //old_to_new_name: BTreeMap::<String, String>::default(),
+            last_color_for_layer: BTreeMap::<String, [f32; 3]>::default(),
             toggled: true,
             last_toggled: true,
             iterations_slider_value: 1,
@@ -372,13 +373,15 @@ impl eframe::App for SvgApp {
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
             ui.separator();
             
-            let mut colors = vec!["purple(16)","navy(16)","seagreen","darkslategrey","black","darkorchid","indianred","darkolivegreen","forestgreen", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "darkred", "chocolate", "blueviolet", "purple", "orange", "green", "blue", "red"];
+            //let mut colors = vec!["purple(16)","navy(16)","seagreen","darkslategrey","black","darkorchid","indianred","darkolivegreen","forestgreen", "indigo", "pink", "olive", "lightsalmon", "cornflowerblue", "deepskyblue", "brown", "darkred", "chocolate", "blueviolet", "purple", "orange", "green", "blue", "red"];
             //List of layers in sidepanel
             //also handling update of checkboxes and renaming here
             egui::ScrollArea::vertical().max_height(500.0).show(ui, |ui|{
                 let mut checkboxes = BTreeMap::<String, bool>::default();
+                let mut colors =  BTreeMap::<String, [f32; 3]>::default();
                 //let mut new_layer_names = BTreeMap::<String, String>::default();
                 self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
+                self.last_color_for_layer = self.color_for_layer.clone();
                 for (layer, polylines) in self.loaded_layers.clone() {
                     let mut checkval = self.checkbox_for_layer.get(&layer).unwrap().clone();
                     let mut color = self.color_for_layer.get(&layer).unwrap().clone();
@@ -395,13 +398,16 @@ impl eframe::App for SvgApp {
                         }
                         self.loaded_layers.remove(&layer);
                         self.loaded_layers.insert(new_name.clone(), polylines);
-                        self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&layer).unwrap().clone());
-                        self.checkbox_for_layer.remove(&layer);
+                        /*self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&layer).unwrap().clone());
+                        self.checkbox_for_layer.remove(&layer);*/
                     }
-                    checkboxes.insert(new_name, checkval);
+                    checkboxes.insert(new_name.clone(), checkval);
+                   
+                    colors.insert(new_name, color);
                 }
                 
                 self.checkbox_for_layer = checkboxes;
+                self.color_for_layer = colors;
                 
                 
 
@@ -413,7 +419,7 @@ impl eframe::App for SvgApp {
                     }
                     self.checkbox_for_layer = checkboxes;
                 }
-                if self.checkbox_for_layer != self.last_checkbox_for_layer {
+                if self.checkbox_for_layer != self.last_checkbox_for_layer || self.color_for_layer != self.last_color_for_layer{
                     auto_rebuild(self, ctx.clone());
                 }
                 self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
@@ -553,17 +559,17 @@ fn auto_rebuild(app: &mut SvgApp, ctx: egui::Context) {
             out.insert(name, val);
         }
     }
-    render_svg(app, ctx, out);
+    render_svg(app, ctx, out, app.color_for_layer.values().cloned().collect());
     //info!("Rebuilt image");
 }
 
-fn render_svg(app: &mut SvgApp, ctx: egui::Context, layers: BTreeMap<String, Vec<PolyLine>>) {
+fn render_svg(app: &mut SvgApp, ctx: egui::Context, layers: BTreeMap<String, Vec<PolyLine>>, colors: Vec<[f32; 3]>) {
     *app.is_loading.write().unwrap() = true;
-    render_async(app.render_sender.clone(), ctx, layers, app.min_x.clone(), app.max_y.clone(), app.width.clone(), app.height.clone());
+    render_async(app.render_sender.clone(), ctx, layers, app.min_x.clone(), app.max_y.clone(), app.width.clone(), app.height.clone(), colors);
 }
-fn render_async(tx: Sender<RawSvg>, ctx: egui::Context, layers: BTreeMap<String, Vec<PolyLine>>, min_x: f64, max_y: f64, width: f64, height: f64) {
+fn render_async(tx: Sender<RawSvg>, ctx: egui::Context, layers: BTreeMap<String, Vec<PolyLine>>, min_x: f64, max_y: f64, width: f64, height: f64, colors: Vec<[f32; 3]>) {
     tokio::spawn(async move{
-        let svg = svgwrite::create_svg(&layers, &min_x, &max_y, &width, &height);
+        let svg = svgwrite::create_svg(&layers, &min_x, &max_y, &width, &height, colors);
         let image = egui_extras::RetainedImage::from_svg_bytes_with_size(
             "rendered_image", //path of svg file to display
             svg.to_string().as_bytes(), 
@@ -600,7 +606,7 @@ fn finished_connect(app: &mut SvgApp, ctx: egui::Context, response: BTreeMap<Str
     }
     //*app.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &app.min_x, &app.max_y, &app.width, &app.height);
     app.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-    render_svg(app, ctx, out_layers);
+    render_svg(app, ctx, out_layers, app.color_for_layer.values().cloned().collect());
     *app.is_loading.write().unwrap() = false;
     info!("Connect done!");
 }
@@ -660,7 +666,7 @@ fn finished_open(app: &mut SvgApp, ctx: egui::Context, response: RawOpen) {
     app.width = response.width;
     app.height = response.height;
     *app.is_loading.write().unwrap() = false;
-    render_svg(app, ctx, response.polylines.clone());
+    render_svg(app, ctx, response.polylines.clone(), app.color_for_layer.values().cloned().collect());
     *app.current_layers.write().unwrap() = response.polylines;
     info!("Opened new file!");
 }
@@ -721,7 +727,7 @@ fn delete_layer(app: &mut SvgApp, ctx: egui::Context) {
             counter += 1;
             app.loaded_layers.remove(layer_name);
         }
-        render_svg(app, ctx, app.loaded_layers.clone());
+        render_svg(app, ctx, app.loaded_layers.clone(), app.color_for_layer.values().cloned().collect());
 
         info!("Deleted {} layers", counter);
     }
@@ -757,7 +763,7 @@ fn merge_layers(app: &mut SvgApp, ctx: egui::Context){
         //app.old_to_new_name.insert(app.merge_name.clone(), app.merge_name.clone());
         app.merge_name = DEFAULT_MERGE_NAME.to_string();
         let test = app.current_layers.read().unwrap().clone();
-        render_svg(app, ctx, test);
+        render_svg(app, ctx, test, app.color_for_layer.values().cloned().collect());
         info!("Merged {} layers", counter);
     }         
 }
@@ -770,7 +776,7 @@ fn undo(app: &mut SvgApp, ctx: egui::Context) {
                     app.next_l_layers.push(app.loaded_layers.clone());
                     app.loaded_layers = prev;
                     populate_maps(app, app.loaded_layers.clone());
-                    render_svg(app, ctx, app.loaded_layers.clone());
+                    render_svg(app, ctx, app.loaded_layers.clone(), app.color_for_layer.values().cloned().collect());
                 }
             },
             UndoType::Current => {
@@ -782,7 +788,7 @@ fn undo(app: &mut SvgApp, ctx: egui::Context) {
                     for (layer_name, polylines) in app.current_layers.read().unwrap().clone(){
                         out_layers.insert(layer_name.clone(), polylines.clone());
                     }
-                    render_svg(app, ctx, out_layers);
+                    render_svg(app, ctx, out_layers, app.color_for_layer.values().cloned().collect());
 
                     let mut temp = BTreeMap::<String, bool>::default();
                     for (name, _polylines) in &app.loaded_layers {
@@ -808,7 +814,7 @@ fn redo(app: &mut SvgApp, ctx: egui::Context) {
                     app.undo_stack.push(UndoType::Loaded);
                     app.prev_l_layers.push(app.loaded_layers.clone());
                     app.loaded_layers = next;
-                    render_svg(app, ctx, app.loaded_layers.clone());
+                    render_svg(app, ctx, app.loaded_layers.clone(), app.color_for_layer.values().cloned().collect());
                     populate_maps(app, app.loaded_layers.clone());
                 }
             },
@@ -831,7 +837,7 @@ fn redo(app: &mut SvgApp, ctx: egui::Context) {
                     }
                     app.checkbox_for_layer = temp.clone();
                     //app.last_checkbox_for_layer = temp;
-                    render_svg(app, ctx, out_layers);
+                    render_svg(app, ctx, out_layers, app.color_for_layer.values().cloned().collect());
                 }
             },
         }
@@ -851,34 +857,40 @@ fn zoom_out(app: &mut SvgApp) {
 
 
 fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
-    let mut colors = vec![
-        [255., 192., 203.] ,
-        [255., 160., 122.],
+    /*let mut colors = vec![
+        [255., 190., 205.] ,
+        [255., 160., 120.],
         [255., 255., 0.],
         [50., 205., 50.],
         [0., 255., 255.],        
-        [255., 69., 0.],        
+        [255., 70., 0.],        
         [255., 165., 0.],
-        [255., 99., 71.] ,
+        [255., 100., 70.] ,
         [255., 140., 0.],
-        [255., 20., 147.] ,
-        [147., 112., 219.],
-        [138., 43., 226.],
-        [255., 192., 203.],
-        [60., 179., 113.],
+        [255., 20., 145.] ,
+        [145., 110., 220.],
+        [140., 45., 225.],
+        [255., 190., 205.],
+        [60., 180., 115.],
         [0., 250., 154.],
         [255., 105., 180.],
-        [176., 196., 222.],
-        [173., 216., 230.],
-        [135., 206., 235.],
+        [175., 195., 220.],
+        [175., 215., 230.],
+        [135., 205., 235.],
         [255., 255., 255.],        
+        ];*/
+        let mut colors = vec![
+        [255., 255., 255.],
+        [255., 0., 0.],
+        [0., 255., 0.],
+        [0., 0., 255.],
         ];
     let mut checkbox_map = BTreeMap::<String, bool>::default();
     let mut color_map = BTreeMap::<String, [f32; 3]>::default();
     //let mut old_name_map = BTreeMap::<String, String>::default();
     for layer_name in polylines.keys() {
         let color = match colors.pop() {
-            Some(color) => color,
+            Some(_color) => _color,
             None => [0., 0., 0.],
         };
         checkbox_map.insert(layer_name.clone(), true);
