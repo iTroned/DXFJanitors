@@ -10,7 +10,7 @@ use dxfextract::PolyLine;
 use eframe::{egui};
 use egui_extras::image::FitTo;
 use egui::{Color32, ScrollArea, Vec2, layers, Image};
-use std::{sync::{RwLock, mpsc::{Receiver, Sender}}, path::PathBuf};
+use std::{sync::{RwLock, mpsc::{Receiver, Sender}}, path::PathBuf, default};
 use svg::Document;
 use std::{collections::{BTreeMap}};
 use log::{error, info, warn};
@@ -554,8 +554,10 @@ impl eframe::App for SvgApp {
 //handles checkboxing and renaming
 fn auto_rebuild(app: &mut SvgApp, ctx: egui::Context) {
     let mut out = BTreeMap::<String, Vec<PolyLine>>::default();
+    let mut colors = Vec::<[f32; 3]>::default();
     for (name, val) in app.loaded_layers.clone() {
         if app.checkbox_for_layer.get(&name).unwrap().clone() {
+            colors.push(app.color_for_layer.get(&name).unwrap().clone());
             out.insert(name, val);
         }
     }
@@ -880,10 +882,10 @@ fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
         [255., 255., 255.],        
         ];*/
         let mut colors = vec![
-        [255., 255., 255.],
-        [255., 0., 0.],
-        [0., 255., 0.],
-        [0., 0., 255.],
+        [1., 1., 1.],
+        [1., 0., 0.],
+        [0., 1., 0.],
+        [0., 0., 1.],
         ];
     let mut checkbox_map = BTreeMap::<String, bool>::default();
     let mut color_map = BTreeMap::<String, [f32; 3]>::default();
