@@ -335,9 +335,9 @@ fn test_try_save_as_dxf(){
         let height = 100.0;
 
         let test_doc = svgwrite::create_svg(&layer_polylines, &min_x, &max_y, &width, &height, vec![[255., 0., 0.]]);
-
+        //rgba(65025,0,0,1.0) 65025 / 255 = 255 => rgb(255,0,0)
         assert_eq!(test_doc.to_string(), 
-        "<svg inkscape:version=\"1.1.1 (3bf5ae0d25, 2021-09-20)\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"layer1\" style=\"display:inline\">\n<path d=\"M0,2 L1,1 L2,2 z\" fill=\"none\" stroke=\"red\" stroke-width=\"0.1px\"/>\n</g>\n</svg>"
+        "<svg inkscape:version=\"1.1.1 (3bf5ae0d25, 2021-09-20)\" viewBox=\"0 0 100 100\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:inkscape=\"http://www.inkscape.org/namespaces/inkscape\">\n<g inkscape:groupmode=\"layer\" inkscape:label=\"layer1\" style=\"display:inline\">\n<path d=\"M0,2 L1,1 L2,2 z\" fill=\"none\" stroke=\"rgba(65025,0,0,1.0)\" stroke-width=\"0.1px\"/>\n</g>\n</svg>"
     );
     
         
