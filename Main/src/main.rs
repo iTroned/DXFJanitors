@@ -139,7 +139,7 @@ pub struct SvgApp {
     last_checkbox_for_layer: BTreeMap<String, bool>,
     last_color_for_layer: BTreeMap::<String, [f32; 3]>,
     //index for renaming
-    //old_to_new_name: BTreeMap::<String, String>,
+    old_to_new_name: BTreeMap::<String, String>,
     toggled: bool,
     last_toggled: bool,
     //slider info
@@ -198,6 +198,7 @@ impl Default for SvgApp {
             color_for_layer: BTreeMap::<String, [f32; 3]>::default(),
             last_checkbox_for_layer: BTreeMap::<String, bool>::default(),
             last_color_for_layer: BTreeMap::<String, [f32; 3]>::default(),
+            old_to_new_name: BTreeMap::<String, String>::default(),
             toggled: true,
             last_toggled: true,
             iterations_slider_value: 1,
@@ -377,37 +378,49 @@ impl eframe::App for SvgApp {
             //List of layers in sidepanel
             //also handling update of checkboxes and renaming here
             egui::ScrollArea::vertical().max_height(500.0).show(ui, |ui|{
-                let mut checkboxes = BTreeMap::<String, bool>::default();
-                let mut colors =  BTreeMap::<String, [f32; 3]>::default();
+                //let mut checkboxes = BTreeMap::<String, bool>::default();
+                //let mut colors =  BTreeMap::<String, [f32; 3]>::default();
                 //let mut new_layer_names = BTreeMap::<String, String>::default();
                 self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
                 self.last_color_for_layer = self.color_for_layer.clone();
+                let mut temp = BTreeMap::<String, String>::default();
                 for (layer, polylines) in self.loaded_layers.clone() {
                     let mut checkval = self.checkbox_for_layer.get(&layer).unwrap().clone();
                     let mut color = self.color_for_layer.get(&layer).unwrap().clone();
-                    let mut new_name = layer.clone();
+                    //let mut new_name = layer.clone();
+                    let mut new_name = self.old_to_new_name.get(&layer).unwrap().clone();
+                    let mut status = false;
                     ui.horizontal(|ui|{
                         ui.checkbox(&mut checkval, "");
-                        ui.add(egui::TextEdit::singleline(&mut new_name));
+                        status = ui.text_edit_singleline(&mut new_name).lost_focus();
                         ui.color_edit_button_rgb(&mut color);
                     });
                     
-                    if new_name != layer {
+                    if status && new_name != layer {
                         if self.loaded_layers.contains_key(&new_name) {
                             new_name.push('_');
                         }
                         self.loaded_layers.remove(&layer);
                         self.loaded_layers.insert(new_name.clone(), polylines);
-                        /*self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&layer).unwrap().clone());
-                        self.checkbox_for_layer.remove(&layer);*/
+                        self.checkbox_for_layer.insert(new_name.clone(), self.checkbox_for_layer.get(&layer).unwrap().clone());
+                        self.checkbox_for_layer.remove(&layer);
+                        self.color_for_layer.insert(new_name.clone(), self.color_for_layer.get(&layer).unwrap().clone());
+                        self.color_for_layer.remove(&layer);
+                        self.old_to_new_name.insert(new_name.clone(), new_name.clone());
+                        self.old_to_new_name.remove(&layer);
+                        temp.insert(new_name.clone(), new_name);
                     }
-                    checkboxes.insert(new_name.clone(), checkval);
+                    else{
+                        temp.insert(layer, new_name);
+                    }
+                    //checkboxes.insert(new_name.clone(), checkval);
                    
-                    colors.insert(new_name, color);
+                    //colors.insert(new_name, color);
                 }
+                self.old_to_new_name = temp;
                 
-                self.checkbox_for_layer = checkboxes;
-                self.color_for_layer = colors;
+                //self.checkbox_for_layer = checkboxes;
+                //self.color_for_layer = colors;
                 
                 
 
@@ -889,7 +902,7 @@ fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
         ];
     let mut checkbox_map = BTreeMap::<String, bool>::default();
     let mut color_map = BTreeMap::<String, [f32; 3]>::default();
-    //let mut old_name_map = BTreeMap::<String, String>::default();
+    let mut name_map = BTreeMap::<String, String>::default();
     for layer_name in polylines.keys() {
         let color = match colors.pop() {
             Some(_color) => _color,
@@ -897,11 +910,11 @@ fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
         };
         checkbox_map.insert(layer_name.clone(), true);
         color_map.insert(layer_name.clone(), color);
-        //old_name_map.insert(layer_name.clone(), layer_name.clone());
+        name_map.insert(layer_name.clone(), layer_name.clone());
     }
     app.checkbox_for_layer = checkbox_map;
     app.color_for_layer = color_map;
-    //app.old_to_new_name = old_name_map;
+    app.old_to_new_name = name_map;
 }
 
 
