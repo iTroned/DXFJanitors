@@ -33,8 +33,8 @@ pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64
             Some(c) => c,
         };*/
         //let _color = colors.pop().unwrap();
-        let color = format!("rgba({},{},{},1.0)", _color[0], _color[1], _color[2]);
-        //println!("{} {} {}", _color[0], _color[1], _color[2]);
+        let color = format!("rgba({},{},{},1.0)", (_color[0] * 255.) as i32, (_color[1] * 255.) as i32, (_color[2]  * 255.) as i32);
+        //println!("{}", &color);
         let mut group = svg_element::Group::new()
             .set("inkscape:label", name.as_str())
             .set("inkscape:groupmode", "layer")
