@@ -310,21 +310,7 @@ impl eframe::App for SvgApp {
                     let minsize: Vec2 = [70.0, 25.0].into ();    
 
                 if ui.add(button8.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
-                    self.undo_stack.push(UndoType::Current);
-                    self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
-                    let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
-                    //let mut counter = 0;
-                    for (name, checked) in &self.checkbox_for_layer {
-                        if checked.clone(){
-                            temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
-                            //counter += 1;
-                        }
-                    }
-                    *self.is_loading.write().unwrap() = true;
-                    
-                    start_thread_connect(self.connect_sender.clone(), ctx.clone(), false, self.current_layers.read().unwrap().clone(), 
-                    temp, Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), 
-                    Some(self.max_angle_slider_value), Some(self.iterations_slider_value));
+                    prepare_connect(self, ctx.clone(), false);
                 }
 
                 ui.add_space(ui.spacing().item_spacing.y); // Add line space here
@@ -333,22 +319,7 @@ impl eframe::App for SvgApp {
                 let minsize: Vec2 = [70.0, 25.0].into ();
     
                 if ui.add(button9.min_size(minsize)).clicked()&& !*self.is_loading.read().unwrap(){
-                    self.undo_stack.push(UndoType::Current);
-                    self.prev_c_layers.push(self.current_layers.read().unwrap().clone());
-                    let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
-                    //let mut counter = 0;
-                    for (name, checked) in &self.checkbox_for_layer {
-                        if checked.clone(){
-                            temp.insert(name.clone(), self.loaded_layers.get(name).unwrap().clone());
-                            //counter += 1;
-                        }
-                    }
-                    *self.is_loading.write().unwrap() = true;
-                    
-                    start_thread_connect(self.connect_sender.clone(), ctx.clone(), true, self.current_layers.read().unwrap().clone(), 
-                    temp, Some((self.max_distance_slider_value as f64) / 1000. * f64::sqrt(self.width * self.width + self.height * self.height)), 
-                    Some(self.max_angle_slider_value), Some(self.iterations_slider_value));
-                    
+                    prepare_connect(self, ctx.clone(), true);
                 }                    
             });
             ui.add_space(ui.spacing().item_spacing.y); // Add line space here
@@ -579,6 +550,7 @@ fn auto_rebuild(app: &mut SvgApp, ctx: egui::Context) {
             out.insert(name, val);
         }
     }
+    *app.current_layers.write().unwrap() = out.clone();
     render_svg(app, ctx, out, colors);
     //info!("Rebuilt image");
 }
@@ -606,6 +578,22 @@ fn finished_render(app: &mut SvgApp, response: RawSvg) {
     *app.is_loading.write().unwrap() = false;
     info!("Rendered new svg");
 }
+fn prepare_connect(app: &mut SvgApp, ctx: egui::Context, extend: bool) {
+    let mut out = BTreeMap::<String, Vec<PolyLine>>::default();
+    for (name, val) in app.loaded_layers.clone() {
+        if app.checkbox_for_layer.get(&name).unwrap().clone() {
+            out.insert(name, val);
+        }
+    }
+    app.undo_stack.push(UndoType::Loaded);
+    app.prev_l_layers.push(app.loaded_layers.clone());
+    *app.is_loading.write().unwrap() = true;
+                    
+    start_thread_connect(app.connect_sender.clone(), ctx, extend, app.loaded_layers.clone(), 
+        app.current_layers.read().unwrap().clone(), Some((app.max_distance_slider_value as f64) / 1000. * f64::sqrt(app.width * app.width + app.height * app.height)), 
+        Some(app.max_angle_slider_value), Some(app.iterations_slider_value));
+                    
+}
 fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::Context, extend: bool, all_layers: BTreeMap<String, Vec<PolyLine>>, 
     affected_layers: BTreeMap<String, Vec<PolyLine>>, max_distance_in: Option<f64>, max_angle_in: Option<i32>, o_iterations: Option<i32>) {
     tokio::spawn(async move {
@@ -619,14 +607,16 @@ fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::
     });
 }
 fn finished_connect(app: &mut SvgApp, ctx: egui::Context, response: BTreeMap<String, Vec<PolyLine>>) {
-    *app.current_layers.write().unwrap() = response;
-    let mut out_layers = BTreeMap::<String, Vec<PolyLine>>::default();
-    for (layer_name, polylines) in app.current_layers.read().unwrap().clone(){
-        out_layers.insert(layer_name.clone(), polylines.clone());
+    app.loaded_layers = response;
+    app.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+    let mut out = BTreeMap::<String, Vec<PolyLine>>::default();
+    for (name, val) in app.loaded_layers.clone() {
+        if app.checkbox_for_layer.get(&name).unwrap().clone() {
+            out.insert(name, val);
+        }
     }
-    //*app.current_svg.write().unwrap() = svgwrite::create_svg(&out_layers, &app.min_x, &app.max_y, &app.width, &app.height);
-    app.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
-    render_svg(app, ctx, out_layers, app.color_for_layer.values().cloned().collect());
+    *app.current_layers.write().unwrap() = out.clone();
+    render_svg(app, ctx, out, app.color_for_layer.values().cloned().collect());
     *app.is_loading.write().unwrap() = false;
     info!("Connect done!");
 }
