@@ -766,7 +766,7 @@ fn merge_layers(app: &mut SvgApp, ctx: egui::Context){
         app.loaded_layers.insert(app.merge_name.clone(), full_layer);
         //app.checkbox_for_layer.insert(app.merge_name.clone(), true);
         
-        *app.current_layers.write().unwrap() = temp;
+        *app.current_layers.write().unwrap() = app.loaded_layers.clone();
         populate_maps(app, app.loaded_layers.clone());
         //app.old_to_new_name.insert(app.merge_name.clone(), app.merge_name.clone());
         app.merge_name = DEFAULT_MERGE_NAME.to_string();
