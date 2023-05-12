@@ -10,7 +10,7 @@ use dxfextract::PolyLine;
 use eframe::{egui};
 use egui_extras::image::FitTo;
 use egui::{Color32, ScrollArea, Vec2, layers, Image};
-use std::{sync::{RwLock, mpsc::{Receiver, Sender}}, path::PathBuf, default};
+use std::{sync::{RwLock, mpsc::{Receiver, Sender}}, path::PathBuf, default, time::SystemTime};
 use svg::Document;
 use std::{collections::{BTreeMap}};
 use log::{error, info, warn};
@@ -598,10 +598,17 @@ fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::
     affected_layers: BTreeMap<String, Vec<PolyLine>>, max_distance_in: Option<f64>, max_angle_in: Option<i32>, o_iterations: Option<i32>) {
     tokio::spawn(async move {
         info!("Started calculations!");
+        let start_time = SystemTime::now();
         // Send a request with an increment value.
-        let calculated = algorithms::try_to_close_polylines(extend, &all_layers, &affected_layers, &max_distance_in, &max_angle_in, &o_iterations);
-        
+        //let calculated = algorithms::try_to_close_polylines(extend, &all_layers, &affected_layers, &max_distance_in, &max_angle_in, &o_iterations);
+        let calculated = algorithms::test(extend, &all_layers, &affected_layers, &max_distance_in);
         // After parsing the response, notify the GUI thread of the increment value.
+        match start_time.elapsed() {
+            Ok(elapsed) => {
+                println!("Spent {} seconds connecting!", elapsed.as_secs());
+            },
+            Err(err) => error!("{}", err),
+        }
         let _ = tx.send(calculated);
         ctx.request_repaint();
     });

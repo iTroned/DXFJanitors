@@ -2,7 +2,7 @@
 use dxfextract::PolyLine;
 
 use log::{error, info, warn};
-use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt};
+use std::{collections::{HashMap, BTreeMap}, f64::consts::PI, vec, fmt, clone};
 
 use crate::dxfextract;
 
@@ -47,6 +47,28 @@ impl fmt::Display for Point {
 pub struct PointWithNeighbour {
     pub point: Point,
     pub neighbour: Point
+}
+#[derive(Clone, PartialEq)]
+pub struct PointPolyline {
+    pub point: Point,
+    pub polyline: PolyLine,
+    pub start: bool
+}
+impl PointPolyline {
+    pub fn new(point: Point, polyline: PolyLine, start: bool) -> Self {
+        Self {point, polyline, start}
+    }
+}
+#[derive(Clone)]
+pub struct Collector {
+    pub pp1: PointPolyline,
+    pub pp2: PointPolyline,
+    pub min: f64
+}
+impl Collector {
+    pub fn new(pp1: PointPolyline, pp2: PointPolyline, min: f64) -> Self {
+        Self {pp1, pp2, min}
+    }
 }
 /*impl PointWithNeighbour {
     pub fn new(point: CustomPoint, neighbour: CustomPoint) -> Self {
@@ -114,8 +136,11 @@ fn intersection(p1: &Point, p2: &Point, p3: &Point, p4: &Point) -> Option<Point>
     closest_point
 }*/
 //returns the distance between two points
-fn distance(point_1x: &f64, point_1y: &f64, point_2x: &f64, point_2y: &f64) -> f64{
+fn _distance(point_1x: &f64, point_1y: &f64, point_2x: &f64, point_2y: &f64) -> f64{
     f64::sqrt((point_1x - point_2x) * (point_1x - point_2x) + (point_1y - point_2y) * (point_1y - point_2y))
+}
+fn distance(point1: &Point, point2: &Point) -> f64 {
+    f64::sqrt((point1.x - point2.x).powi(2) + (point1.y - point2.y).powi(2))
 }
 
 //angle at the point two linear functions intercept
@@ -162,6 +187,101 @@ fn _angle_three_points(a: Point, b: Point, c: Point) -> f64{
     }
 
     
+}
+pub fn test(extend: bool, all_layers: &BTreeMap<String, Vec<PolyLine>>, affected_layers: &BTreeMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>) -> BTreeMap<String, Vec<PolyLine>> {
+    let max_distance;
+    if let Some(distance) = max_distance_in.clone(){
+        max_distance = distance;
+    } 
+    else {
+        max_distance = 0.0;
+    }
+    let mut current_map = BTreeMap::<String, Vec<PolyLine>>::new();
+    for(name, polylines) in all_layers{
+        if !affected_layers.contains_key(name){
+            continue;
+        }
+        println!("Layer: {}", name);
+        let mut cur_polylines = polylines.clone();
+        let mut points = Vec::<PointPolyline>::default();
+        for polyline in polylines {
+            //println!("IsClosed: {}", polyline.is_closed);
+            if polyline.is_closed{
+                continue;
+            }
+            //println!("Adding polyline");
+            points.push(PointPolyline::new(Point::new(polyline.x_values.first().unwrap().clone(), polyline.y_values.first().unwrap().clone()), polyline.clone(), true));
+            points.push(PointPolyline::new(Point::new(polyline.x_values.last().unwrap().clone(), polyline.y_values.last().unwrap().clone()), polyline.clone(), false));
+        }
+        while points.len() > 2 {
+            let col = closest(&points);
+            //println!("{}", col.min);
+            //increases efficiency when using a max distance
+            if col.min > max_distance {
+                break;
+            }
+            //todo create connected polyline
+            let mut x_val;
+            let mut y_val;
+            let start_pp = col.pp1.clone();
+            let end_pp = col.pp2.clone();
+            
+            /*if !col.pp1.start && col.pp2.start {
+                start_pp = col.pp2.clone();
+                end_pp = col.pp1.clone();
+            }
+            else {
+                start_pp = col.pp1.clone();
+                end_pp = col.pp2.clone();
+            }*/
+            let is_closed = start_pp.polyline == end_pp.polyline;
+            //println!("{}", is_closed);
+            if start_pp.start {
+                x_val = reverse_vector(start_pp.polyline.x_values);
+                y_val = reverse_vector(start_pp.polyline.y_values);
+            }
+            else {
+                x_val = start_pp.polyline.x_values;
+                y_val = start_pp.polyline.y_values;
+            }
+            //special case when extending instead of connecting
+            if extend {
+
+            }
+            if end_pp.start {
+                x_val.append(&mut end_pp.polyline.x_values.clone());
+                y_val.append(&mut end_pp.polyline.y_values.clone());
+            }
+            else{
+                x_val.append(&mut reverse_vector(end_pp.polyline.x_values));
+                y_val.append(&mut reverse_vector(end_pp.polyline.y_values));
+            }
+            let new_polyline = PolyLine::new(is_closed.clone(), x_val.clone(), y_val.clone());
+            println!("A: {}", points.len());
+            //println!("A: {}", &col.pp1);
+            points.retain(|x| x.polyline != col.pp1.polyline);
+            points.retain(|x| x.polyline != col.pp2.polyline);
+            println!("B: {}", points.len());
+            if !is_closed {
+                points.push(PointPolyline::new(Point::new(x_val.first().unwrap().clone(), y_val.first().unwrap().clone()), new_polyline.clone(), true));
+                points.push(PointPolyline::new(Point::new(x_val.last().unwrap().clone(), y_val.last().unwrap().clone()), new_polyline.clone(), true));
+            }
+            
+            //println!("C: {}", points.len());
+            cur_polylines.retain(|x| x != &col.pp1.polyline);
+            cur_polylines.retain(|x| x != &col.pp2.polyline);
+            cur_polylines.push(new_polyline);
+            
+        }
+        current_map.insert(name.clone(), cur_polylines);
+    }
+    for (name, layer) in all_layers {
+        if affected_layers.contains_key(name){
+            continue;
+        }
+        current_map.insert(name.clone(), layer.clone());
+    }
+    current_map
 }
 //function that connects polylines inside of each layer depending on the parameters given. O(n^2) so needs optimizing later down the line
 pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<PolyLine>>, affected_layers: &BTreeMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>, max_angle_in: &Option<i32>, o_iterations: &Option<i32>) -> BTreeMap<String, Vec<PolyLine>> {
@@ -216,7 +336,7 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                 let start_y = polyline.y_values.first().unwrap();
                 let end_x = polyline.x_values.last().unwrap();
                 let end_y = polyline.y_values.last().unwrap();
-                let start_distance = distance(start_x, start_y, end_x, end_y);
+                let start_distance = _distance(start_x, start_y, end_x, end_y);
                 let mut min_distance_start = start_distance.clone();
                 let mut min_distance_end = start_distance.clone();
                 let mut should_close = true;
@@ -240,14 +360,14 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                     
                     //checks startpoint of selected polyline
                     //against startpoint of current
-                    let mut cur_distance = distance(start_x, start_y, cmp_start_x, cmp_start_y);
+                    let mut cur_distance = _distance(start_x, start_y, cmp_start_x, cmp_start_y);
                     if cur_distance < min_distance_start && cur_distance <= max_distance{
                         min_distance_start = cur_distance;
                         start_connection = Some(cmp_polyline);
                         start_is_start = true;
                     }
                     //against endpoint of current
-                    cur_distance = distance(start_x, start_y, cmp_end_x, cmp_end_y);
+                    cur_distance = _distance(start_x, start_y, cmp_end_x, cmp_end_y);
                     if cur_distance < min_distance_start && cur_distance <= max_distance{
                         
                         min_distance_start = cur_distance;
@@ -258,7 +378,7 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
     
                     //checks endpoint of selected polyline
                     //against startpoint of current
-                    cur_distance = distance(end_x, end_y, cmp_start_x, cmp_start_y);
+                    cur_distance = _distance(end_x, end_y, cmp_start_x, cmp_start_y);
                     if cur_distance < min_distance_end && cur_distance <= max_distance{
                         
                         min_distance_end = cur_distance;
@@ -266,7 +386,7 @@ pub fn try_to_close_polylines(extend: bool, all_layers: &BTreeMap<String, Vec<Po
                         end_is_start = true;
                     }
                     //against endpoint of current
-                    cur_distance = distance(end_x, end_y, cmp_end_x, cmp_end_y);
+                    cur_distance = _distance(end_x, end_y, cmp_end_x, cmp_end_y);
                     if cur_distance < min_distance_end && cur_distance <= max_distance{
                         
                         min_distance_end = cur_distance;
@@ -615,6 +735,89 @@ pub fn reverse_vector(mut vector: Vec<f64>) -> Vec<f64>{
     out
 }
 
+//brute force checks all
+//O(n^2)
+fn brute(points: &Vec<PointPolyline>) -> Collector{
+    let mut min = f64::MAX;
+    let size = points.len();
+    let mut current = None;
+    for i in 0..size {
+        for j in i+1..size{
+            let point1 = &points[i];
+            let point2 = &points[j];
+            let distance = distance(&point1.point, &point2.point);
+            if distance < min {
+                min = distance;
+                current = Some(Collector::new(point1.clone(), point2.clone(), min.clone()));
+            }
+        }
+    }
+    current.unwrap()
+}
+fn strip(points: &Vec<PointPolyline>, d: &Collector) -> Collector{
+    let mut strip = points.clone();
+    let mut min = d.min.clone();
+    let size = strip.len();
+    //println!("size: {}", size);
+    let mut current = d.clone();
+    strip.sort_by(|a, b| a.point.y.partial_cmp(&b.point.y).unwrap());
+
+    for i in 0..size {
+        let x = i+1;
+        //println!("{}", i);
+        for j in x..size {
+            //println!("{} {}", i, j);
+            if (strip[j].point.y - strip[i].point.y) > min {
+                break;
+            }
+            let point1 = &strip[i];
+            let point2 = &strip[j];
+            let distance = distance(&point1.point, &point2.point);
+            
+            if distance < min {
+                min = distance;
+                println!("Overwriting");
+                current = Collector::new(point1.clone(), point2.clone(), min.clone());
+            }
+        }
+    }
+    current
+}
+fn closest_util(points: &Vec<PointPolyline>, start: usize, end: usize) -> Collector{
+    if (end - start) <= 3 {
+        //println!("Bruting");
+        return brute(points);
+    }
+    //println!("Start: {} End: {}", start, end);
+    let mid = start + (end - start) / 2;
+    let mid_point = points[mid].clone();
+    let dl = closest_util(points, start, mid);
+    let dr = closest_util(points, mid, end);
+    let d;
+    if dl.min < dr.min {
+        d = dl;
+    }
+    else {
+        d = dr;
+    }
+    let mut strip_points = Vec::<PointPolyline>::default();
+    for i in 0..end {
+        if (points[i].point.x - mid_point.point.x) < d.min {
+            //println!("{}", points[i].point.x);
+            strip_points.push(points[i].clone());
+        }
+    } 
+    let temp = strip(&strip_points, &d);
+    Collector::new(temp.pp1, temp.pp2, temp.min.min(d.min))
+}
+fn closest(in_points: &Vec<PointPolyline>) -> Collector{
+    let mut points = in_points.clone();
+    points.sort_by(|a, b| a.point.x.partial_cmp(&b.point.x).unwrap());
+    for point in &points {
+        //println!("{}", point.point);
+    }
+    closest_util(&points, 0 as usize, points.len())
+}
 
 #[cfg(test)]
 mod tests {
@@ -678,7 +881,7 @@ mod tests {
         let p1 = Point::new(2.0, 2.0);
         let p2 = Point::new(2.0, 2.0);
         let expected_result = 0.0;
-        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+        let result = _distance(&p1.x, &p1.y, &p2.x, &p2.y);
 
         assert_eq!(result, expected_result);
 
@@ -686,7 +889,7 @@ mod tests {
         let p1 = Point::new(0.0, 2.0);
         let p2 = Point::new(2.0, 2.0);
         let expected_result = 2.0;
-        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+        let result = _distance(&p1.x, &p1.y, &p2.x, &p2.y);
 
         assert_eq!(result, expected_result);
 
@@ -694,7 +897,7 @@ mod tests {
         let p1 = Point::new(2.0, 0.0);
         let p2 = Point::new(2.0, 2.0);
         let expected_result = 2.0;
-        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+        let result = _distance(&p1.x, &p1.y, &p2.x, &p2.y);
 
         assert_eq!(result, expected_result);
 
@@ -702,7 +905,7 @@ mod tests {
         let p1 = Point::new(1.0, 2.0);
         let p2 = Point::new(4.0, 6.0);
         let expected_result = 5.0;
-        let result = distance(&p1.x, &p1.y, &p2.x, &p2.y);
+        let result = _distance(&p1.x, &p1.y, &p2.x, &p2.y);
 
         assert_eq!(result, expected_result);
 
