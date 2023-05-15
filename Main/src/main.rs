@@ -591,29 +591,35 @@ fn prepare_connect(app: &mut SvgApp, ctx: egui::Context, extend: bool) {
                     
     start_thread_connect(app.connect_sender.clone(), ctx, extend, app.loaded_layers.clone(), 
         app.current_layers.read().unwrap().clone(), Some((app.max_distance_slider_value as f64) / 1000. * f64::sqrt(app.width * app.width + app.height * app.height)), 
-        Some(app.max_angle_slider_value), Some(app.iterations_slider_value));
+        Some(app.max_angle_slider_value), app.iterations_slider_value.clone());
                     
 }
 fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::Context, extend: bool, all_layers: BTreeMap<String, Vec<PolyLine>>, 
-    affected_layers: BTreeMap<String, Vec<PolyLine>>, max_distance_in: Option<f64>, max_angle_in: Option<i32>, o_iterations: Option<i32>) {
+    affected_layers: BTreeMap<String, Vec<PolyLine>>, max_distance_in: Option<f64>, max_angle_in: Option<i32>, iterations: i32) {
     tokio::spawn(async move {
-        info!("Started calculations!");
+        info!("Started calculations for connection!");
+        let mut iter = iterations - 1;
         let start_time = SystemTime::now();
         // Send a request with an increment value.
         //let calculated = algorithms::try_to_close_polylines(extend, &all_layers, &affected_layers, &max_distance_in, &max_angle_in, &o_iterations);
-        let calculated = algorithms::test(extend, &all_layers, &affected_layers, &max_distance_in);
+        let mut out = algorithms::connection_algorithm(extend, &all_layers, &affected_layers, &max_distance_in);
+        while iter > 0 {
+            iter -= 1;
+            out = algorithms::connection_algorithm(extend, &out, &affected_layers, &max_distance_in);
+        }
         // After parsing the response, notify the GUI thread of the increment value.
         match start_time.elapsed() {
             Ok(elapsed) => {
-                println!("Spent {} seconds connecting!", elapsed.as_secs());
+                info!("Spent {} seconds connecting!", elapsed.as_secs());
             },
             Err(err) => error!("{}", err),
         }
-        let _ = tx.send(calculated);
+        let _ = tx.send(out);
         ctx.request_repaint();
     });
 }
 fn finished_connect(app: &mut SvgApp, ctx: egui::Context, response: BTreeMap<String, Vec<PolyLine>>) {
+    app.prev_l_layers.push(app.loaded_layers.clone());
     app.loaded_layers = response;
     app.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
     let mut out = BTreeMap::<String, Vec<PolyLine>>::default();

@@ -14,6 +14,8 @@ def savedxf(*args, **kwargs):
     file = ezdxf.new("R2010", setup=True)
     if "0" in layers:
         file.layers.remove("0")
+    if "Defpoints" in layers:
+        file.layers.remove("Defpoints")
     msp = file.modelspace()
     counter = 1
     for layer, polylines in layers.items():
