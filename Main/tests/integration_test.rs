@@ -47,7 +47,7 @@ fn test_try_to_extend_polylines(){
         //Test case 0: Only 1 iteration => line should give correct values, but is_closed = false
         test_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
         test_affected_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
-        let result = algorithms::try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(1));
+        let result = algorithms::connection_algorithm_legacy(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(1));
 
         let x1_values = vec![1.0, 2.0, 3.0, 5.0, 6.0]; 
         let y1_values = vec![1.0, 1.0, 1.0, 3.0, 3.0];
@@ -66,7 +66,7 @@ fn test_try_to_extend_polylines(){
         //Test case 1: Close with it's own polyline => is closed from false to true
         test_layers.insert(String::from("test1"), vec![polyline1.clone()]);
         test_affected_layers.insert(String::from("test1"), vec![polyline1.clone()]);
-        let result = algorithms::try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
 
         let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
@@ -79,7 +79,7 @@ fn test_try_to_extend_polylines(){
         //Test case 2: Extend: Start is start = True, End is start = True
         test_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
         test_affected_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
-        let result = algorithms::try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
     
         let x1_values = vec![1.0, 2.0, 3.0, 5.0, 6.0]; 
@@ -92,7 +92,7 @@ fn test_try_to_extend_polylines(){
         //Test case 3: Extend: Start is start, end is end
         test_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
         test_affected_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
-        let result = algorithms::try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         
         let x1_values = vec![6.0, 5.0, 3.0, 2.0, 1.0]; 
@@ -105,7 +105,7 @@ fn test_try_to_extend_polylines(){
         //Test case 5: Extend: Start is end, end is start
         test_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]); 
         test_affected_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]);
-        let result = algorithms::try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         let x1_values = vec![1.0, 2.0, 3.0, 5.0, 6.0]; 
         let y1_values = vec![1.0, 1.0, 1.0, 3.0, 3.0];
@@ -118,7 +118,7 @@ fn test_try_to_extend_polylines(){
         //Test case 6: Extend: Start is end, end is end
         test_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]); 
         test_affected_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]);
-        let result = algorithms::try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         let x1_values = vec![6.0, 5.0, 3.0, 2.0, 1.0]; 
         let y1_values = vec![3.0, 3.0, 1.0, 1.0, 1.0];
@@ -145,7 +145,7 @@ fn test_try_to_extend_polylines(){
         expected.insert(String::from("test6"), vec![not_affected1.clone()]);
         expected.insert(String::from("test7"), vec![not_affected2.clone()]);
 
-        let result = algorithms::try_to_close_polylines(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(true, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         assert_eq!(result, expected);
 }
@@ -187,7 +187,7 @@ fn test_try_to_connect_polylines(){
         //Test case 0: Only 1 iteration => line should give correct values, but is_closed = false
         test_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
         test_affected_layers.insert(String::from("test0"), vec![start_is_start.clone(), end_is_start.clone()]);
-        let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(1));
+        let result = algorithms::connection_algorithm_legacy(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(1));
 
         let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
         let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
@@ -206,7 +206,7 @@ fn test_try_to_connect_polylines(){
         //Test case 1: Close with it's own polyline => is closed from false to true
         test_layers.insert(String::from("test1"), vec![polyline1.clone()]);
         test_affected_layers.insert(String::from("test1"), vec![polyline1.clone()]);
-        let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         let x1_values = vec![1.0, 2.0, 2.0, 2.0, 1.0]; 
         let y1_values = vec![1.0, 1.0, 2.0, 3.0, 3.0];
@@ -218,7 +218,7 @@ fn test_try_to_connect_polylines(){
         //Test case 2: Connect: Start is start, end is start
         test_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
         test_affected_layers.insert(String::from("test2"), vec![start_is_start.clone(), end_is_start.clone()]);
-        let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
         let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
@@ -230,7 +230,7 @@ fn test_try_to_connect_polylines(){
         //Test case 3: Connect: Start is start, end is end
         test_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
         test_affected_layers.insert(String::from("test3"), vec![start_is_start.clone(), end_is_end.clone()]);
-        let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         
         let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
@@ -243,7 +243,7 @@ fn test_try_to_connect_polylines(){
         //Test case 4: Connect: Start is end, end is start
         test_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]); 
         test_affected_layers.insert(String::from("test4"), vec![start_is_end.clone(), end_is_start.clone()]);
-        let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
         let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
@@ -255,7 +255,7 @@ fn test_try_to_connect_polylines(){
         //Test case 5: Connect: Start is end, end is end
         test_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]); 
         test_affected_layers.insert(String::from("test5"), vec![start_is_end.clone(), end_is_end.clone()]);
-        let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         let x1_values = vec![6.0, 5.0, 4.0, 3.0, 2.0, 1.0]; 
         let y1_values = vec![3.0, 3.0, 2.0, 1.0, 1.0, 1.0];
@@ -283,7 +283,7 @@ fn test_try_to_connect_polylines(){
         expected.insert(String::from("test6"), vec![not_affected1.clone()]);
         expected.insert(String::from("test7"), vec![not_affected2.clone()]);
 
-        let result = algorithms::try_to_close_polylines(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
+        let result = algorithms::connection_algorithm_legacy(false, &test_layers, &test_affected_layers, &Some(100.0), &Some(180), &Some(10));
 
         assert_eq!(result, expected);
 }
