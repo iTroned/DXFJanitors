@@ -330,9 +330,9 @@ impl eframe::App for SvgApp {
             // wrap the slider in a vertical layout to move it to a new line
             ui.vertical(|ui| {
             //ui.add(egui::Label::new("Iterations"));
-                ui.add(Slider::new(&mut self.iterations_slider_value, 1..=10).text("Iterations (amount)"));
+                ui.add(Slider::new(&mut self.iterations_slider_value, 1..=100).text("Iterations (amount)"));
                 ui.add(Slider::new(&mut self.max_distance_slider_value, 1..=1000).text("Max distance (‰)"));
-                ui.add(Slider::new(&mut self.max_angle_slider_value, 1..=180).text("Max angle (°)"));
+                //ui.add(Slider::new(&mut self.max_angle_slider_value, 1..=180).text("Max angle (°)"));
             // do not update value with slider_value when slider is change
             });
 
