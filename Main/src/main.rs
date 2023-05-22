@@ -54,6 +54,7 @@ struct RawSvg {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
+
 fn main() {
    // load logger from environment
     env_logger::init_from_env(
@@ -493,7 +494,8 @@ impl eframe::App for SvgApp {
                 
                 ui.separator();
                 ui.menu_button("Zoom", |ui| {
-                    ui.set_max_width(240.0);
+                    ui.set_max_width(160.0);
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     if ui.add(egui::Button::new("Zoom in").shortcut_text("Ctrl + +")).clicked() {
                         zoom_in(self);
                     }
@@ -505,9 +507,10 @@ impl eframe::App for SvgApp {
                 });
                 ui.separator();
                 ui.menu_button("Tools", |ui| {
-                    ui.set_max_width(240.0);
+                    ui.set_max_width(80.0);
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
                     if ui.button("Extend").clicked(){
-
+                        
                     }
                     ui.separator();
                     if ui.button("Connect").clicked(){
@@ -517,7 +520,10 @@ impl eframe::App for SvgApp {
                 });
                 ui.separator();
                 ui.menu_button("Help", |ui| {
-                    ui.set_max_width(240.0);
+                    ui.visuals_mut().override_text_color = Some(Color32::WHITE);
+                    ui.set_max_width(100.0);
+                    ui.hyperlink_to("User manual", "https://github.com/iTroned/DXFJanitors/blob/main/User%20manual_dxf_janitors.pdf");
+                    
                 });
 
             });
