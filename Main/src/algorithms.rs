@@ -271,7 +271,7 @@ pub fn connection_algorithm(extend: bool, all_layers: &BTreeMap<String, Vec<Poly
                 let temp_x = end_pp.polyline.x_values.clone();
                 let temp_y = end_pp.polyline.y_values.clone();
                 if end_pp.start {
-                    e_point = Point::new(temp_x[2], temp_y[2]);
+                    e_point = Point::new(temp_x[1], temp_y[1]);
                 }
                 else {
                     e_point = Point::new(temp_x[temp_x.len() - 2], temp_y[temp_x.len() - 2]);

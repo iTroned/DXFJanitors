@@ -5,7 +5,7 @@ mod dxfwrite;
 mod algorithms;
 mod svgwrite;
 mod dxfextract;
-use dxf::Color;
+use dxf::{Color, DxfResult};
 use dxfextract::PolyLine;
 use eframe::{egui};
 use egui_extras::image::FitTo;
@@ -40,10 +40,11 @@ struct RawOpen {
     max_y: f64,
     width: f64,
     height: f64,
+    result: bool,
 }
 impl RawOpen {
-    pub fn new(polylines: BTreeMap<String, Vec<PolyLine>>, min_x: f64, max_y: f64, width: f64, height: f64) -> Self {
-        Self {polylines, min_x, max_y, width, height}
+    pub fn new(polylines: BTreeMap<String, Vec<PolyLine>>, min_x: f64, max_y: f64, width: f64, height: f64, result: bool) -> Self {
+        Self {polylines, min_x, max_y, width, height, result}
     }
 }
 //#[derive(Clone)]
@@ -619,6 +620,7 @@ fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::
     });
 }
 fn finished_connect(app: &mut SvgApp, ctx: egui::Context, response: BTreeMap<String, Vec<PolyLine>>) {
+    app.undo_stack.push(UndoType::Loaded);
     app.prev_l_layers.push(app.loaded_layers.clone());
     app.loaded_layers = response;
     app.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
@@ -652,8 +654,18 @@ fn open_file(app: &mut SvgApp, ctx: egui::Context) {
 fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
     tokio::spawn(async move {
         info!("Started opening file!");
-        let dxf = dxf::Drawing::load_file(dxf_path).expect("Not a valid file");
+        let dxf;
         let mut layer_polylines = BTreeMap::<String, Vec<PolyLine>>::default(); 
+        match dxf::Drawing::load_file(dxf_path) {
+            Ok(_dxf) => dxf = _dxf,
+            Err(err) => {
+                let raw = RawOpen::new(layer_polylines, 0., 0., 0., 0., false);
+                let _ = tx.send(raw);
+                panic!("{}", err);
+            },
+        }
+        //let dxf = dxf::Drawing::load_file(dxf_path).expect("Not a valid file");
+        
                   
         let layers = dxfextract::extract_layers(&dxf);
         for (name, layer) in layers.iter() {
@@ -674,21 +686,26 @@ fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
             panic!("Calculate_min_max not working!");
         }
         //let svg = svgwrite::create_svg(&layer_polylines, &min_x, &max_y, &width, &height);
-        let raw = RawOpen::new(layer_polylines, min_x, max_y, width, height);
+        let raw = RawOpen::new(layer_polylines, min_x, max_y, width, height, true);
         let _ = tx.send(raw);
         ctx.request_repaint();
     });
     
 }
 fn finished_open(app: &mut SvgApp, ctx: egui::Context, response: RawOpen) {
+    *app.is_loading.write().unwrap() = false;
+    //if async function paniced while opening
+    if !response.result {
+        let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("Something went wrong while opening the file. Is the file of the valid format?").set_buttons(rfd::MessageButtons::Ok).show();
+        return;
+    }
     populate_maps(app, response.polylines.clone());
-
     app.loaded_layers = response.polylines.clone();
     app.min_x = response.min_x;
     app.max_y = response.max_y;
     app.width = response.width;
     app.height = response.height;
-    *app.is_loading.write().unwrap() = false;
+    //*app.is_loading.write().unwrap() = false;
     render_svg(app, ctx, response.polylines.clone(), app.color_for_layer.values().cloned().collect());
     *app.current_layers.write().unwrap() = response.polylines;
     info!("Opened new file!");
