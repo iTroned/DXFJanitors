@@ -452,7 +452,7 @@ impl eframe::App for SvgApp {
                 let button7 = egui::Button::new("Delete layer(s)");
                 let minsize: Vec2 = [70.0, 25.0].into ();
 
-                if ui.add(button7.min_size(minsize).fill(Color32::from_rgb(245, 22, 22))).clicked() {
+                if ui.add(button7.min_size(minsize).fill(Color32::from_rgb(182, 0, 0))).clicked() {
                     delete_layer(self, ctx.clone());
                 }
             });
