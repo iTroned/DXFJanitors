@@ -196,6 +196,7 @@ pub fn connection_algorithm(extend: bool, all_layers: &BTreeMap<String, Vec<Poly
     if let Some(distance) = max_distance_in.clone(){
         max_distance = distance;
     } 
+    //if max distance is not specified, no connections will be made
     else {
         max_distance = 0.0;
     }
@@ -255,6 +256,7 @@ pub fn connection_algorithm(extend: bool, all_layers: &BTreeMap<String, Vec<Poly
                 y_val = start_pp.polyline.y_values;
             }
             let mut remove = false;
+            //if trying to connect two points with the same coordinates, remove one of them before connection to remove dupes
             let merge = start_pp.point == end_pp.point;
             //triangles being edgecases
             let mut is_triangle = false;
@@ -345,8 +347,7 @@ pub fn connection_algorithm(extend: bool, all_layers: &BTreeMap<String, Vec<Poly
     }
     current_map
 }
-//function that connects polylines inside of each layer depending on the parameters given. O(n^2) so needs optimizing later down the line
-// this is legacy
+
 
 //finds and returns the min and max x and y for a given map
 pub fn calculate_min_max(layer_polylines: &BTreeMap<String, Vec<PolyLine>>) -> Option<(f64, f64, f64, f64, f64)>{
@@ -479,6 +480,9 @@ fn closest(in_points: &Vec<PointPolyline>) -> Collector{
     }
     closest_util(&points, 0 as usize, points.len())
 }
+
+//function that connects polylines inside of each layer depending on the parameters given. O(n^2) so needs optimizing later down the line
+// this is legacy
 pub fn connection_algorithm_legacy(extend: bool, all_layers: &BTreeMap<String, Vec<PolyLine>>, affected_layers: &BTreeMap<String, Vec<PolyLine>>, max_distance_in: &Option<f64>, max_angle_in: &Option<i32>, o_iterations: &Option<i32>) -> BTreeMap<String, Vec<PolyLine>> {
     let mut out = all_layers.clone();
     let mut iterations;
