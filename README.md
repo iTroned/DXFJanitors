@@ -28,19 +28,21 @@ This is a guide on how to access and use the code after cloning the repository f
 7.	Open the project in VSCode.
 8.	Wait for the rust-analyzer to load.
 9.	If error message says: “error: no Python 3.x interpreter found.”
-  a.	Find your local Python interpreter’s file location.
-  b.	Find the Python310.dll file:
-  c.	Copy the Python310.dll file into the project folder Main/target/debug/:
-  d.	Re-open the project or restart Rust-analyzer. 
-      If the error message still shows, try these steps:
-      1.	Uninstall the Python Interpreter.
-      2.	Download Python version 3.10.10.
-      3.	Add the Python310.dll file from the new downloaded files to Main/target/debug/
-      4.	Specify the Python Interpreter in VSCode with “Ctrl + Shift + P” and search for “Select Python Interpreter”.
-      5.	Browse the internet for solutions
+    1.	Find your local Python interpreter’s file location.
+    2. Find the Python310.dll file:
+    3. Copy the Python310.dll file into the project folder Main/target/debug/:
+    4. Re-open the project or restart Rust-analyzer. 
+   
+If the error message still shows, try these steps:
+* Uninstall the Python Interpreter.
+* Download Python version 3.10.10.
+* Copy the Python310.dll file from the new downloaded files to Main/target/debug/
+* Specify the Python Interpreter in VSCode with “Ctrl + Shift + P” and search for “Select Python Interpreter”. 
+* Browse the internet for solutions
+* Alternatively create a new Python environment. 
+        
 
-      Alternatively create a new Python environment. 
-
+     
 
 10.	These libraries need to be installed on the Python interpreter or via an environment:
 Matplotlib: https://matplotlib.org/stable/users/installing/index.html
