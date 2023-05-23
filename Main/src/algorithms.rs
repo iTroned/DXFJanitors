@@ -224,6 +224,8 @@ pub fn connection_algorithm(extend: bool, all_layers: &BTreeMap<String, Vec<Poly
             //find the 2 closest open points in the layer
             let col = closest(&points);
             //increases efficiency when using a max distance
+            //if no pairs in max distance, skip
+            //this has to be optimized later down the line, as now the iterations are not broken up when done
             if col.min > max_distance {
                 for polyline in cur_polylines {
                     out_polylines.push(polyline);
@@ -235,6 +237,7 @@ pub fn connection_algorithm(extend: bool, all_layers: &BTreeMap<String, Vec<Poly
             let start_pp;
             let end_pp;
             
+            //positions the points before iteration, for better handling
             if !col.pp1.start && col.pp2.start {
                 start_pp = col.pp2.clone();
                 end_pp = col.pp1.clone();
@@ -243,6 +246,7 @@ pub fn connection_algorithm(extend: bool, all_layers: &BTreeMap<String, Vec<Poly
                 start_pp = col.pp1.clone();
                 end_pp = col.pp2.clone();
             }
+            //is the points part of the same polyline?
             let is_closed = start_pp.polyline == end_pp.polyline;
 
             if start_pp.start {
@@ -397,7 +401,7 @@ pub fn reverse_vector(mut vector: Vec<f64>) -> Vec<f64>{
     out
 }
 
-//brute force checks all
+//brute force checks all. finds the closest pair out of 2-3 points
 //O(n^2)
 fn brute(points: &Vec<PointPolyline>) -> Collector{
     let mut min = f64::MAX;
@@ -416,19 +420,18 @@ fn brute(points: &Vec<PointPolyline>) -> Collector{
     }
     current.unwrap()
 }
+//finds the closest pair in a strip
 fn strip(points: &Vec<PointPolyline>, d: &Collector) -> Collector{
     let mut strip = points.clone();
     let mut min = d.min.clone();
     let size = strip.len();
-    //println!("size: {}", size);
     let mut current = d.clone();
+    //sorts by y values
     strip.sort_by(|a, b| a.point.y.partial_cmp(&b.point.y).unwrap());
 
     for i in 0..size {
         let x = i+1;
-        //println!("{}", i);
         for j in x..size {
-            //println!("{} {}", i, j);
             if (strip[j].point.y - strip[i].point.y) > min {
                 break;
             }
@@ -438,19 +441,17 @@ fn strip(points: &Vec<PointPolyline>, d: &Collector) -> Collector{
             
             if distance < min {
                 min = distance;
-                //println!("Overwriting");
                 current = Collector::new(point1.clone(), point2.clone(), min.clone());
             }
         }
     }
     current
 }
+//recursive function that creates and sorts into halves based by y-value
 fn closest_util(points: &Vec<PointPolyline>, start: usize, end: usize) -> Collector{
     if (end - start) <= 3 {
-        //println!("Bruting");
         return brute(points);
     }
-    //println!("Start: {} End: {}", start, end);
     let mid = start + (end - start) / 2;
     let mid_point = points[mid].clone();
     let dl = closest_util(points, start, mid);
@@ -465,19 +466,17 @@ fn closest_util(points: &Vec<PointPolyline>, start: usize, end: usize) -> Collec
     let mut strip_points = Vec::<PointPolyline>::default();
     for i in 0..end {
         if (points[i].point.x - mid_point.point.x) < d.min {
-            //println!("{}", points[i].point.x);
             strip_points.push(points[i].clone());
         }
     } 
     let temp = strip(&strip_points, &d);
     Collector::new(temp.pp1, temp.pp2, temp.min.min(d.min))
 }
+//returns the closest pair of points and the distance between
 fn closest(in_points: &Vec<PointPolyline>) -> Collector{
     let mut points = in_points.clone();
+    //sort by x-values
     points.sort_by(|a, b| a.point.x.partial_cmp(&b.point.x).unwrap());
-    for point in &points {
-        //println!("{}", point.point);
-    }
     closest_util(&points, 0 as usize, points.len())
 }
 

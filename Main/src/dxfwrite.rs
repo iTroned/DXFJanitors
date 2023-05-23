@@ -6,8 +6,10 @@ use pyo3::{PyResult, types::{PyModule, IntoPyDict}, PyAny, Python, Py};
 use crate::dxfextract::PolyLine;
 
 pub fn savedxf(map: BTreeMap<String, Vec<PolyLine>>, path: &String) -> PyResult<()> {
+    //creates a serde off the information to save. basically a dictionary for python
     let serialized = serde_json::to_string(&map).unwrap();
     let out_path = path.clone()/* .replace('.', "_").replace(' ', "_") + ".dxf"*/;
+    //starts a python script
     Python::with_gil(|py| {
         let fun: Py<PyAny> = PyModule::from_code(
             py,

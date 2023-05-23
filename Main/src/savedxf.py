@@ -7,11 +7,13 @@ from ezdxf import recover
 from ezdxf.addons.drawing import matplotlib
 from ezdxf.addons.drawing import RenderContext, Frontend
 from ezdxf.addons.drawing.matplotlib import MatplotlibBackend
+#saves the file as a dxf using ezdxf
 def savedxf(*args, **kwargs): 
     json_data = kwargs["json"]
     layers = json.loads(json_data)
     path = kwargs["path"]
     file = ezdxf.new("R2010", setup=True)
+    #removes layers that are automatically created, replacing them with the already created ones
     if "0" in layers:
         file.layers.remove("0")
     if "Defpoints" in layers:
@@ -34,7 +36,7 @@ def savedxf(*args, **kwargs):
             #print(points)
             msp.add_lwpolyline(points, close=polyline["is_closed"], dxfattribs={"layer": layer})
     file.saveas(path)
-
+#saves the file as an svg using ezdxf
 def savesvg(*args, **kwargs):
     in_path = kwargs["in_path"]
     out_path = kwargs["out_path"]

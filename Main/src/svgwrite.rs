@@ -6,6 +6,8 @@ use std::{collections::{HashMap, BTreeMap}};
 use log::{info};
 use crate::dxfextract;
 use pyo3::{PyResult, types::{PyModule, IntoPyDict}, PyAny, Python, Py};
+
+//creates an svg from a map and respective info
 pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64, max_y: &f64, width: &f64, height: &f64, colors: Vec<[f32; 3]>) -> Document{
     let mut document = Document::new()
     // .set::<_, (f64, f64, f64, f64)>("viewBox", (22000.0, 90000.0, 2800.0, 4000.0))
@@ -35,10 +37,12 @@ pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64
         //let _color = colors.pop().unwrap();
         let color = format!("rgba({},{},{},1.0)", (_color[0] * 255.) as i32, (_color[1] * 255.) as i32, (_color[2]  * 255.) as i32);
         //println!("{}", &color);
+        //new group. basically the same as the layer in dxf
         let mut group = svg_element::Group::new()
             .set("inkscape:label", name.as_str())
             .set("inkscape:groupmode", "layer")
             .set("style", "display:inline");
+        //adds all the polylines
         for polyline in polylines.iter() {
             let mut path_data = svg_element::path::Data::new();
             let x_values = polyline.x_values.iter();
@@ -67,19 +71,21 @@ pub fn create_svg(layer_polylines: &BTreeMap<String, Vec<PolyLine>>, min_x: &f64
             group = group.add(path);
         }
 
+//adds the layer as a whole to the svg
         document = document.add(group);
 
         info!("created svg layer: {}", name);
     }
     document
 }
+//saves the svg to a given path
 pub fn save_svg(path: &String, file: &Document){
     match svg::save(path.clone() /* .replace('.', "_").replace(' ', "_") + ".svg"*/, file) {
         Ok(_) => info!("Saved SVG: {}", path),
         Err(err) => panic!("Error: {}", err),
     };
 }
-//alternative working way of saving as svg
+//alternative working way of saving as svg. uses ezdxf. this is not a good way to do it as is now
 pub fn _save_svg_ez(path: &String) -> PyResult<()>{
     let out_path = path.clone().replace('.', "_").replace(' ', "_") + ".svg";
     Python::with_gil(|py| {

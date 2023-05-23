@@ -214,6 +214,7 @@ fn _make_polyline_ellipse(
         is_closed,
     }
 }
+//takes in a dxf file and turns all the information into polylines we can work with
 pub fn extract_layers(dxf_file: &dxf::Drawing) -> HashMap<String, Layer> {
     let mut layers = HashMap::<String, Layer>::default();
     

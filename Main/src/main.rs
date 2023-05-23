@@ -279,6 +279,7 @@ impl eframe::App for SvgApp {
                         redo(self, ctx.clone());
                     }
                 }
+                //opens open dialogue
                 else if i.keys_down.contains(&egui::Key::O){
                     open_file(self, ctx.clone());
                 }
@@ -298,7 +299,7 @@ impl eframe::App for SvgApp {
             }
         });
         
-
+        //the tool panel
         egui::SidePanel::right("right_panel").resizable(false).frame(_my_frame).show(ctx, |ui|{
             ui.heading("Tools");
             ui.separator();
@@ -353,22 +354,23 @@ impl eframe::App for SvgApp {
             egui::ScrollArea::vertical().max_height(500.0).show(ui, |ui|{
                 let mut checkboxes = BTreeMap::<String, bool>::default();
                 let mut colors =  BTreeMap::<String, [f32; 3]>::default();
-                //let mut new_layer_names = BTreeMap::<String, String>::default();
                 self.last_checkbox_for_layer = self.checkbox_for_layer.clone();
                 self.last_color_for_layer = self.color_for_layer.clone();
+
                 let mut temp = BTreeMap::<String, String>::default();
                 for (layer, polylines) in self.loaded_layers.clone() {
                     let mut checkval = self.checkbox_for_layer.get(&layer).unwrap().clone();
                     let mut color = self.color_for_layer.get(&layer).unwrap().clone();
-                    //let mut new_name = layer.clone();
                     let mut new_name = self.old_to_new_name.get(&layer).unwrap().clone();
                     let mut status = false;
+                    //adds a checkbox, a text field and a color picker button
                     ui.horizontal(|ui|{
                         ui.checkbox(&mut checkval, "");
                         status = ui.text_edit_singleline(&mut new_name).lost_focus();
                         ui.color_edit_button_rgb(&mut color);
                     });
                     
+                    //handles renaming of a layer after deselect
                     if status && new_name != layer {
                         while self.loaded_layers.contains_key(&new_name) {
                             new_name.push('_');
@@ -385,6 +387,7 @@ impl eframe::App for SvgApp {
                         colors.insert(new_name.clone(), color);
                         checkboxes.insert(new_name, checkval);
                     }
+                    //if no renaming happened, just update colors and checkboxes
                     else{
                         temp.insert(layer.clone(), new_name.clone());
                         colors.insert(layer.clone(), color);
@@ -410,6 +413,7 @@ impl eframe::App for SvgApp {
                     }
                     self.checkbox_for_layer = checkboxes;
                 }
+                //rebuilds the visualizatin / svg of the image if there has been a checkbox or color change since last update
                 if self.checkbox_for_layer != self.last_checkbox_for_layer || self.color_for_layer != self.last_color_for_layer{
                     auto_rebuild(self, ctx.clone());
                 }
@@ -566,6 +570,7 @@ fn render_svg(app: &mut SvgApp, ctx: egui::Context, layers: BTreeMap<String, Vec
     *app.is_loading.write().unwrap() = true;
     render_async(app.render_sender.clone(), ctx, layers, app.min_x.clone(), app.max_y.clone(), app.width.clone(), app.height.clone(), colors);
 }
+//creates an svg file asynchronously, then changes the image in the app
 fn render_async(tx: Sender<RawSvg>, ctx: egui::Context, layers: BTreeMap<String, Vec<PolyLine>>, min_x: f64, max_y: f64, width: f64, height: f64, colors: Vec<[f32; 3]>) {
     tokio::spawn(async move{
         let svg = svgwrite::create_svg(&layers, &min_x, &max_y, &width, &height, colors);
@@ -614,7 +619,7 @@ fn start_thread_connect(tx: Sender<BTreeMap<String, Vec<PolyLine>>>, ctx: egui::
             iter -= 1;
             out = algorithms::connection_algorithm(extend, &out, &affected_layers, &max_distance_in);
         }
-        // After parsing the response, notify the GUI thread of the increment value.
+        //after finishing, log the time it took to complete
         match start_time.elapsed() {
             Ok(elapsed) => {
                 info!("Spent {} seconds connecting!", elapsed.as_secs());
@@ -642,26 +647,31 @@ fn finished_connect(app: &mut SvgApp, ctx: egui::Context, response: BTreeMap<Str
     info!("Connect done!");
 }
 fn open_file(app: &mut SvgApp, ctx: egui::Context) {
+    //opens a file picker dialog
     if let Some(path) = rfd::FileDialog::new().add_filter("dxf", &["dxf"]).pick_file() {
         app.picked_path = Some(path.display().to_string());
         //get extension to see if we want to update display
         let extension = path.extension().unwrap();
         if extension == "dxf" && !app.is_loading.read().unwrap().clone(){
-            //if we want to be able to undo to old opened files we need to fix something right here
+            //if we want to be able to undo to old opened files we need to fix something right here. should probably not be a thing though
             *app.is_loading.write().unwrap() = true;
             app.prev_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
             app.next_l_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
             app.prev_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
             app.next_c_layers = Vec::<BTreeMap<String, Vec<PolyLine>>>::default();
+            //starts async opening
             open_file_async(app.open_sender.clone(), ctx, path.display().to_string());
         }
     }
 }
+//opens and loads a dxf file async
 fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
     tokio::spawn(async move {
         info!("Started opening file!");
         let dxf;
         let mut layer_polylines = BTreeMap::<String, Vec<PolyLine>>::default(); 
+        //open the file into a Drawing object
+        //if not a valid file, give info to parent thread before panicing this thread
         match dxf::Drawing::load_file(dxf_path) {
             Ok(_dxf) => dxf = _dxf,
             Err(err) => {
@@ -670,7 +680,6 @@ fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
                 panic!("{}", err);
             },
         }
-        //let dxf = dxf::Drawing::load_file(dxf_path).expect("Not a valid file");
         
                   
         let layers = dxfextract::extract_layers(&dxf);
@@ -682,12 +691,14 @@ fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
         let max_y;
         let width;
         let height;
+        //get info about borders in the file
         if let Some(result) = algorithms::calculate_min_max(&layer_polylines) {
             min_x = result.0;
             max_y = result.2;
             width = result.3;
             height = result.4;
         }
+        //does not alert the parent thread, so need to add error handling here later
         else {
             panic!("Calculate_min_max not working!");
         }
@@ -698,7 +709,9 @@ fn open_file_async(tx: Sender<RawOpen>, ctx: egui::Context, dxf_path: String) {
     });
     
 }
+//when the info after async open has been sent to the app
 fn finished_open(app: &mut SvgApp, ctx: egui::Context, response: RawOpen) {
+    //user is free to start other processes
     *app.is_loading.write().unwrap() = false;
     //if async function paniced while opening
     if !response.result {
@@ -711,7 +724,6 @@ fn finished_open(app: &mut SvgApp, ctx: egui::Context, response: RawOpen) {
     app.max_y = response.max_y;
     app.width = response.width;
     app.height = response.height;
-    //*app.is_loading.write().unwrap() = false;
     render_svg(app, ctx, response.polylines.clone(), app.color_for_layer.values().cloned().collect());
     *app.current_layers.write().unwrap() = response.polylines;
     info!("Opened new file!");
@@ -782,14 +794,17 @@ fn delete_layer(app: &mut SvgApp, ctx: egui::Context) {
 fn merge_layers(app: &mut SvgApp, ctx: egui::Context){
     //checks wheter the name is in use or not
     let mut full_layer = Vec::<PolyLine>::default();
+    //makes sure the new name is valid
     if app.merge_name == "".to_string() || app.loaded_layers.contains_key(&app.merge_name) && !app.checkbox_for_layer.get(&app.merge_name).unwrap(){
         let _msg = rfd::MessageDialog::new().set_title("Error!").set_description("The new layer needs different name!").set_buttons(rfd::MessageButtons::Ok).show();
     }
     else{
+        //can undo from this
         app.undo_stack.push(UndoType::Loaded);
         app.prev_l_layers.push(app.loaded_layers.clone());
         let mut counter = 0;
         let mut temp = BTreeMap::<String, Vec<PolyLine>>::default();
+        //collects all selected layers
         for (layer_name, is_checked) in app.checkbox_for_layer.clone().iter(){
             if !is_checked {
                 continue;
@@ -797,8 +812,10 @@ fn merge_layers(app: &mut SvgApp, ctx: egui::Context){
             temp.insert(layer_name.clone(), app.loaded_layers.get(layer_name).unwrap().clone());
             counter += 1;
             full_layer.append(&mut app.loaded_layers.get(layer_name).unwrap().clone());
+            //removes the selected layer
             app.loaded_layers.remove(layer_name);
         }
+        //adds a new layer containing all the old ones
         app.loaded_layers.insert(app.merge_name.clone(), full_layer);
         //app.checkbox_for_layer.insert(app.merge_name.clone(), true);
         
@@ -873,8 +890,9 @@ fn zoom_out(app: &mut SvgApp) {
     }
 }
 
-
+//populates information after creating a new workspace
 fn populate_maps(app: &mut SvgApp, polylines: BTreeMap<String, Vec<PolyLine>>) {
+    //specific colors for the svg / visualization
     let mut colors = vec![
         [0.6       , 0.29803921, 0.        ],
         [1.        , 0.62745098, 0.47843137],
