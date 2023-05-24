@@ -36,10 +36,9 @@ This is a guide on how to access and use the code after cloning the repository f
 <br> 9. Open the project in VSCode <br> 
 <br> 10. You should get the error message: Error: No python interpreter 3.x found. <br>
 Press Ctrl + Shift + P, and search Python. Pick "Python: Select Interpreter.". Locate the python.exe file from the folder C:\Users\"username"\miniconda3\envs\myenv\ and select it. <br>
-<br> After selection, copy the Python310.dll file from C:\Users\"username"\miniconda3\envs\myenv\ and place it in the project folder Main/target/debug/
-
-<br>Restart the application
-<br>If the error message still appear, copy every single file from C:\Users\"username"\miniconda3\envs\myenv\ int o the project folder Main/target/debug/.
+<br> After selection, copy the Python310.dll file from C:\Users\"username"\miniconda3\envs\myenv\ and place it in the project folder Main/target/debug/ <br>
+<br>Restart the application<br>
+<br>If the error message still appear, copy every single file from C:\Users\"username"\miniconda3\envs\myenv\ into the project folder Main/target/debug/.
 
 
 6.	Use the following commands in terminal to explore the project:
