@@ -16,40 +16,33 @@ This is a software tool made for [Laiout](https://www.laiout.co/) as part of our
 5. Zoom: CTRL + + & CTRL + - / ALT + Scroll
 
 
-## Clone the repository:
+## Installation guide (until a safe version on an embedded interpreter is developed):
 
 This is a guide on how to access and use the code after cloning the repository from link.
 1.	Download VSCode: https://code.visualstudio.com/
 2.	Install build-tools for Visual Studio with the Visual C++ option: https://visualstudio.microsoft.com/downloads/?q=build+tools (located at the bottom of the site). When downloading, choose the Visual C++ option.
 3.	Install rustup. It is an installer for Rust: https://rustup.rs/
 4.	Install the rust-analyzer extension in VSCode: https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer
-5.	Install Python: https://www.python.org/downloads/windows/
-6.	Clone the Repository from: https://github.com/iTroned/DXFJanitors
-7.	Open the project in VSCode.
-8.	Wait for the rust-analyzer to load.
-9.	If error message says: “error: no Python 3.x interpreter found.”
-    1.	Find your local Python interpreter’s file location.
-    2. Find the Python310.dll file:
-    3. Copy the Python310.dll file into the project folder Main/target/debug/:
-    4. Re-open the project or restart Rust-analyzer. 
-   
-If the error message still shows, try these steps:
-* Uninstall the Python Interpreter.
-* Download Python version 3.10.10.
-* Copy the Python310.dll file from the new downloaded files to Main/target/debug/
-* Specify the Python Interpreter in VSCode with “Ctrl + Shift + P” and search for “Select Python Interpreter”. 
-* Browse the internet for solutions
-* Alternatively create a new Python environment. 
-        
 
-     
+5. Until a stable version of an embedded python interpreter, the user unfortunately needs to setup a local python environment for the program to use:<br>
+<br> 1. Install Miniconda: https://docs.conda.io/en/latest/miniconda.html <br>
+<br> 2. Open miniconda. <br>
+<br> 3. Create a new environment in miniconda with: conda create --name myenv <br>
+<br> 4. Activate the environment in miniconda: conda activate myenv <br>
+<br> 5. Install ezdxf=1.0.2. "conda install -c conda-forge ezdxf=1.0.2" - (https://anaconda.org/conda-forge/ezdxf) <br>
+<br> 6. Install matplotlib. "conda install -c conda-forge matplotlib" - (https://anaconda.org/conda-forge/matplotlib) <br>
+<br> 7. Locate the folder for the created environment. Standard location is: C:\Users\"username"\miniconda3\envs <br>
+<br> 8. Clone the Repository from https://github.com/iTroned/DXFJanitors <br>
+<br> 9. Open the project in VSCode <br> 
+<br> 10. You should get the error message: Error: No python interpreter 3.x found. <br>
+Press Ctrl + Shift + P, and search Python. Pick "Python: Select Interpreter.". Locate the python.exe file from the folder C:\Users\"username"\miniconda3\envs\myenv\ and select it. <br>
+<br> After selection, copy the Python310.dll file from C:\Users\"username"\miniconda3\envs\myenv\ and place it in the project folder Main/target/debug/
 
-10.	These libraries need to be installed on the Python interpreter or via an environment:
-Matplotlib: https://matplotlib.org/stable/users/installing/index.html
-Ezdxf: https://pypi.org/project/ezdxf/
+<br>Restart the application
+<br>If the error message still appear, copy every single file from C:\Users\"username"\miniconda3\envs\myenv\ int o the project folder Main/target/debug/.
 
 
-11.	Use the following commands in terminal to explore the project:
+6.	Use the following commands in terminal to explore the project:
 All commands can be found here: https://doc.rust-lang.org/cargo/commands/build-commands.html
 
 1.	“cd main”: All files are located in the "main" folder.
